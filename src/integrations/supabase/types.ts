@@ -14,7 +14,206 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      card_instances: {
+        Row: {
+          active_skills: string[] | null
+          battles_fought: number
+          created_at: string
+          creature_id: string
+          id: string
+          last_trained_at: string | null
+          nfc_card_id: string
+          skill_points: number
+          training_sessions: number
+          unlocked_skills: string[] | null
+        }
+        Insert: {
+          active_skills?: string[] | null
+          battles_fought?: number
+          created_at?: string
+          creature_id: string
+          id?: string
+          last_trained_at?: string | null
+          nfc_card_id: string
+          skill_points?: number
+          training_sessions?: number
+          unlocked_skills?: string[] | null
+        }
+        Update: {
+          active_skills?: string[] | null
+          battles_fought?: number
+          created_at?: string
+          creature_id?: string
+          id?: string
+          last_trained_at?: string | null
+          nfc_card_id?: string
+          skill_points?: number
+          training_sessions?: number
+          unlocked_skills?: string[] | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "card_instances_creature_id_fkey"
+            columns: ["creature_id"]
+            isOneToOne: false
+            referencedRelation: "creatures"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "card_instances_nfc_card_id_fkey"
+            columns: ["nfc_card_id"]
+            isOneToOne: true
+            referencedRelation: "nfc_cards"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      creature_skills: {
+        Row: {
+          creature_id: string
+          id: string
+          skill_id: string
+          unlock_order: number
+        }
+        Insert: {
+          creature_id: string
+          id?: string
+          skill_id: string
+          unlock_order?: number
+        }
+        Update: {
+          creature_id?: string
+          id?: string
+          skill_id?: string
+          unlock_order?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "creature_skills_creature_id_fkey"
+            columns: ["creature_id"]
+            isOneToOne: false
+            referencedRelation: "creatures"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "creature_skills_skill_id_fkey"
+            columns: ["skill_id"]
+            isOneToOne: false
+            referencedRelation: "skills"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      creatures: {
+        Row: {
+          base_endurance: number
+          base_magic: number
+          base_speed: number
+          base_strength: number
+          created_at: string
+          description: string | null
+          form: Database["public"]["Enums"]["creature_form"]
+          id: string
+          image_url: string | null
+          max_active_skills: number
+          name: string
+          rarity: Database["public"]["Enums"]["creature_rarity"]
+          type: Database["public"]["Enums"]["creature_type"]
+        }
+        Insert: {
+          base_endurance?: number
+          base_magic?: number
+          base_speed?: number
+          base_strength?: number
+          created_at?: string
+          description?: string | null
+          form?: Database["public"]["Enums"]["creature_form"]
+          id?: string
+          image_url?: string | null
+          max_active_skills?: number
+          name: string
+          rarity?: Database["public"]["Enums"]["creature_rarity"]
+          type: Database["public"]["Enums"]["creature_type"]
+        }
+        Update: {
+          base_endurance?: number
+          base_magic?: number
+          base_speed?: number
+          base_strength?: number
+          created_at?: string
+          description?: string | null
+          form?: Database["public"]["Enums"]["creature_form"]
+          id?: string
+          image_url?: string | null
+          max_active_skills?: number
+          name?: string
+          rarity?: Database["public"]["Enums"]["creature_rarity"]
+          type?: Database["public"]["Enums"]["creature_type"]
+        }
+        Relationships: []
+      }
+      nfc_cards: {
+        Row: {
+          created_at: string
+          creature_id: string
+          first_scanned_at: string | null
+          id: string
+          uid: string
+        }
+        Insert: {
+          created_at?: string
+          creature_id: string
+          first_scanned_at?: string | null
+          id?: string
+          uid: string
+        }
+        Update: {
+          created_at?: string
+          creature_id?: string
+          first_scanned_at?: string | null
+          id?: string
+          uid?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "nfc_cards_creature_id_fkey"
+            columns: ["creature_id"]
+            isOneToOne: false
+            referencedRelation: "creatures"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      skills: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          name: string
+          stat_affected: string
+          tier: Database["public"]["Enums"]["skill_tier"]
+          type: Database["public"]["Enums"]["creature_type"]
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          name: string
+          stat_affected?: string
+          tier?: Database["public"]["Enums"]["skill_tier"]
+          type: Database["public"]["Enums"]["creature_type"]
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          name?: string
+          stat_affected?: string
+          tier?: Database["public"]["Enums"]["skill_tier"]
+          type?: Database["public"]["Enums"]["creature_type"]
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -23,7 +222,19 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      creature_form: "standard" | "spezial"
+      creature_rarity: "gewoehnlich" | "selten" | "episch" | "legendaer"
+      creature_type:
+        | "feuer"
+        | "wasser"
+        | "erde"
+        | "luft"
+        | "blitz"
+        | "eis"
+        | "gift"
+        | "licht"
+        | "schatten"
+      skill_tier: "standard" | "selten" | "super" | "episch"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +361,21 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      creature_form: ["standard", "spezial"],
+      creature_rarity: ["gewoehnlich", "selten", "episch", "legendaer"],
+      creature_type: [
+        "feuer",
+        "wasser",
+        "erde",
+        "luft",
+        "blitz",
+        "eis",
+        "gift",
+        "licht",
+        "schatten",
+      ],
+      skill_tier: ["standard", "selten", "super", "episch"],
+    },
   },
 } as const
