@@ -6,22 +6,18 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { CREATURE_TYPES, SKILL_TIERS, STAT_OPTIONS, TYPE_LABELS, TIER_LABELS, STAT_LABELS } from "@/lib/constants";
+import { CREATURE_TYPES, SKILL_TIERS, STAT_OPTIONS, SKILL_KINDS, TYPE_LABELS, TIER_LABELS, STAT_LABELS, KIND_LABELS } from "@/lib/constants";
 import TypeBadge from "./TypeBadge";
-import type { Database } from "@/integrations/supabase/types";
 import { Trash2 } from "lucide-react";
-
-type SkillInsert = Database["public"]["Tables"]["skills"]["Insert"];
-type CreatureType = Database["public"]["Enums"]["creature_type"];
-type SkillTier = Database["public"]["Enums"]["skill_tier"];
 
 export default function SkillManager() {
   const queryClient = useQueryClient();
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
-  const [tier, setTier] = useState<SkillTier>("standard");
-  const [type, setType] = useState<CreatureType>("feuer");
+  const [tier, setTier] = useState("standard");
+  const [type, setType] = useState("feuer");
   const [statAffected, setStatAffected] = useState("strength");
+  const [kind, setKind] = useState("attack");
 
   const { data: skills, isLoading } = useQuery({
     queryKey: ["skills"],
@@ -34,8 +30,9 @@ export default function SkillManager() {
 
   const createMutation = useMutation({
     mutationFn: async () => {
-      const skill: SkillInsert = { name, description: description || null, tier, type, stat_affected: statAffected };
-      const { error } = await supabase.from("skills").insert(skill);
+      const { error } = await supabase.from("skills").insert({
+        name, description: description || null, tier, type, stat_affected: statAffected, kind,
+      } as any);
       if (error) throw error;
     },
     onSuccess: () => {
@@ -73,10 +70,19 @@ export default function SkillManager() {
         </div>
       </div>
 
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        <div className="space-y-2">
+          <Label>Art</Label>
+          <Select value={kind} onValueChange={setKind}>
+            <SelectTrigger><SelectValue /></SelectTrigger>
+            <SelectContent>
+              {SKILL_KINDS.map((k) => <SelectItem key={k} value={k}>{KIND_LABELS[k]} {k === "attack" ? "⚔️" : "🛡️"}</SelectItem>)}
+            </SelectContent>
+          </Select>
+        </div>
         <div className="space-y-2">
           <Label>Stufe</Label>
-          <Select value={tier} onValueChange={(v) => setTier(v as SkillTier)}>
+          <Select value={tier} onValueChange={setTier}>
             <SelectTrigger><SelectValue /></SelectTrigger>
             <SelectContent>
               {SKILL_TIERS.map((t) => <SelectItem key={t} value={t}>{TIER_LABELS[t]}</SelectItem>)}
@@ -85,7 +91,7 @@ export default function SkillManager() {
         </div>
         <div className="space-y-2">
           <Label>Typ</Label>
-          <Select value={type} onValueChange={(v) => setType(v as CreatureType)}>
+          <Select value={type} onValueChange={setType}>
             <SelectTrigger><SelectValue /></SelectTrigger>
             <SelectContent>
               {CREATURE_TYPES.map((t) => <SelectItem key={t} value={t}>{TYPE_LABELS[t]}</SelectItem>)}
@@ -118,9 +124,11 @@ export default function SkillManager() {
                 <div className="flex items-center gap-3 min-w-0">
                   <TypeBadge type={skill.type} />
                   <div className="min-w-0">
-                    <p className="font-medium text-sm truncate">{skill.name}</p>
+                    <p className="font-medium text-sm truncate">
+                      {(skill as any).kind === "attack" ? "⚔️" : "🛡️"} {skill.name}
+                    </p>
                     <p className="text-xs text-muted-foreground">
-                      {TIER_LABELS[skill.tier]} · {STAT_LABELS[skill.stat_affected] || skill.stat_affected}
+                      {TIER_LABELS[skill.tier] || skill.tier} · {STAT_LABELS[skill.stat_affected] || skill.stat_affected}
                     </p>
                   </div>
                 </div>

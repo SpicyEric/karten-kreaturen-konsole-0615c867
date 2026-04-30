@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import TypeBadge from "./TypeBadge";
 import RarityBadge from "./RarityBadge";
-import { FORM_LABELS, STAT_LABELS } from "@/lib/constants";
+import { FORM_LABELS } from "@/lib/constants";
 import { Trash2 } from "lucide-react";
 
 export default function CreatureList() {
@@ -63,11 +63,10 @@ export default function CreatureList() {
             </span>
           </div>
 
-          <div className="grid grid-cols-4 gap-2 text-center">
+          <div className="grid grid-cols-3 gap-2 text-center">
             {[
               { label: "STR", value: c.base_strength },
               { label: "SPD", value: c.base_speed },
-              { label: "END", value: c.base_endurance },
               { label: "MAG", value: c.base_magic },
             ].map(({ label, value }) => (
               <div key={label} className="bg-secondary rounded p-2">
@@ -83,7 +82,7 @@ export default function CreatureList() {
               <div className="flex flex-wrap gap-1">
                 {c.creature_skills.map((cs: any) => (
                   <span key={cs.id} className="text-xs bg-accent/20 text-accent-foreground px-2 py-0.5 rounded">
-                    {cs.skills?.name || "?"}
+                    {cs.skills?.name || "?"} {cs.skills?.kind === "attack" ? "⚔️" : "🛡️"}
                   </span>
                 ))}
               </div>
