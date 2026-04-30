@@ -1,10 +1,7 @@
-import type { CapacitorConfig } from '@niceplugins/capacitor-nfc';
+// Capacitor Konfiguration für NFC Kreaturen
+// Wird erst aktiv wenn Capacitor CLI installiert ist.
 
-// NOTE: Dieses Config-File wird erst aktiv, wenn Capacitor installiert wird.
-// Die Capacitor-Abhängigkeiten werden NICHT im Web-Projekt installiert,
-// sondern erst beim nativen Build-Prozess.
-
-const config: CapacitorConfig = {
+const config = {
   appId: 'com.nfckreaturen.app',
   appName: 'NFC Kreaturen',
   webDir: 'dist',
