@@ -64,7 +64,7 @@ export default {
         type: {
           feuer: "hsl(var(--type-feuer))",
           wasser: "hsl(var(--type-wasser))",
-          erde: "hsl(var(--type-erde))",
+          stein: "hsl(var(--type-stein))",
           luft: "hsl(var(--type-luft))",
           blitz: "hsl(var(--type-blitz))",
           eis: "hsl(var(--type-eis))",

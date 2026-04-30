@@ -106,7 +106,6 @@ export type Database = {
       }
       creatures: {
         Row: {
-          base_endurance: number
           base_magic: number
           base_speed: number
           base_strength: number
@@ -121,7 +120,6 @@ export type Database = {
           type: Database["public"]["Enums"]["creature_type"]
         }
         Insert: {
-          base_endurance?: number
           base_magic?: number
           base_speed?: number
           base_strength?: number
@@ -136,7 +134,6 @@ export type Database = {
           type: Database["public"]["Enums"]["creature_type"]
         }
         Update: {
-          base_endurance?: number
           base_magic?: number
           base_speed?: number
           base_strength?: number
@@ -189,28 +186,31 @@ export type Database = {
           created_at: string
           description: string | null
           id: string
+          kind: string
           name: string
           stat_affected: string
           tier: Database["public"]["Enums"]["skill_tier"]
-          type: Database["public"]["Enums"]["creature_type"]
+          type: string
         }
         Insert: {
           created_at?: string
           description?: string | null
           id?: string
+          kind?: string
           name: string
           stat_affected?: string
           tier?: Database["public"]["Enums"]["skill_tier"]
-          type: Database["public"]["Enums"]["creature_type"]
+          type: string
         }
         Update: {
           created_at?: string
           description?: string | null
           id?: string
+          kind?: string
           name?: string
           stat_affected?: string
           tier?: Database["public"]["Enums"]["skill_tier"]
-          type?: Database["public"]["Enums"]["creature_type"]
+          type?: string
         }
         Relationships: []
       }
@@ -227,7 +227,7 @@ export type Database = {
       creature_type:
         | "feuer"
         | "wasser"
-        | "erde"
+        | "stein"
         | "luft"
         | "blitz"
         | "eis"
@@ -367,7 +367,7 @@ export const Constants = {
       creature_type: [
         "feuer",
         "wasser",
-        "erde",
+        "stein",
         "luft",
         "blitz",
         "eis",

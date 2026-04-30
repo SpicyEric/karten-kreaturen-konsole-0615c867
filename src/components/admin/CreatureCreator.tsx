@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { CREATURE_TYPES, CREATURE_RARITIES, CREATURE_FORMS, TYPE_LABELS, RARITY_LABELS, FORM_LABELS } from "@/lib/constants";
+import { CREATURE_TYPES, CREATURE_RARITIES, CREATURE_FORMS, TYPE_LABELS, RARITY_LABELS, FORM_LABELS, TYPE_PRIMARY_STAT, STAT_LABELS } from "@/lib/constants";
 import type { Database } from "@/integrations/supabase/types";
 
 type CreatureInsert = Database["public"]["Tables"]["creatures"]["Insert"];
@@ -24,7 +24,6 @@ export default function CreatureCreator() {
   const [form, setForm] = useState<CreatureForm>("standard");
   const [strength, setStrength] = useState(10);
   const [speed, setSpeed] = useState(10);
-  const [endurance, setEndurance] = useState(10);
   const [magic, setMagic] = useState(10);
   const [maxActiveSkills, setMaxActiveSkills] = useState(3);
   const [imageUrl, setImageUrl] = useState("");
@@ -41,11 +40,23 @@ export default function CreatureCreator() {
 
   const filteredSkills = skills?.filter((s) => s.type === type) || [];
 
+  const primaryStat = TYPE_PRIMARY_STAT[type] || "strength";
+
+  // Validate: at least 1 attack skill if any skills selected
+  const selectedSkillObjects = skills?.filter((s) => selectedSkills.includes(s.id)) || [];
+  const attackCount = selectedSkillObjects.filter((s) => s.kind === "attack").length;
+  const defenceCount = selectedSkillObjects.filter((s) => s.kind === "defence").length;
+  const skillValidationError = selectedSkills.length > 0 && attackCount === 0
+    ? "Mindestens 1 Angriffs-Skill benötigt!"
+    : defenceCount >= 2
+      ? "Maximal 1 Verteidigungs-Skill erlaubt!"
+      : null;
+
   const createMutation = useMutation({
     mutationFn: async () => {
       const creature: CreatureInsert = {
         name, description: description || null, type, rarity, form,
-        base_strength: strength, base_speed: speed, base_endurance: endurance,
+        base_strength: strength, base_speed: speed,
         base_magic: magic, max_active_skills: maxActiveSkills,
         image_url: imageUrl || null,
       };
@@ -65,7 +76,7 @@ export default function CreatureCreator() {
       queryClient.invalidateQueries({ queryKey: ["creatures"] });
       toast.success("Kreatur erstellt!");
       setName(""); setDescription(""); setSelectedSkills([]);
-      setStrength(10); setSpeed(10); setEndurance(10); setMagic(10);
+      setStrength(10); setSpeed(10); setMagic(10);
     },
     onError: (e) => toast.error("Fehler: " + e.message),
   });
@@ -75,6 +86,12 @@ export default function CreatureCreator() {
       prev.includes(id) ? prev.filter((s) => s !== id) : [...prev, id]
     );
   };
+
+  const stats = [
+    { key: "strength", label: "Stärke", value: strength, set: setStrength },
+    { key: "speed", label: "Geschwindigkeit", value: speed, set: setSpeed },
+    { key: "magic", label: "Magie", value: magic, set: setMagic },
+  ];
 
   return (
     <div className="space-y-6">
@@ -122,16 +139,15 @@ export default function CreatureCreator() {
       </div>
 
       <div className="space-y-4">
-        <h3 className="font-mono text-sm text-muted-foreground">Basiswerte</h3>
-        {[
-          { label: "Stärke", value: strength, set: setStrength },
-          { label: "Geschwindigkeit", value: speed, set: setSpeed },
-          { label: "Ausdauer", value: endurance, set: setEndurance },
-          { label: "Magie", value: magic, set: setMagic },
-        ].map(({ label, value, set }) => (
-          <div key={label} className="space-y-1">
+        <h3 className="font-mono text-sm text-muted-foreground">
+          Basiswerte <span className="text-xs">(Primärstat für {TYPE_LABELS[type]}: <strong className="text-primary">{STAT_LABELS[primaryStat]}</strong>)</span>
+        </h3>
+        {stats.map(({ key, label, value, set }) => (
+          <div key={key} className="space-y-1">
             <div className="flex justify-between text-sm">
-              <span>{label}</span>
+              <span className={key === primaryStat ? "text-primary font-bold" : ""}>
+                {label} {key === primaryStat && "⭐"}
+              </span>
               <span className="font-mono text-primary">{value}</span>
             </div>
             <Slider value={[value]} onValueChange={([v]) => set(v)} min={1} max={100} step={1} />
@@ -159,7 +175,7 @@ export default function CreatureCreator() {
 
       {filteredSkills.length > 0 && (
         <div className="space-y-2">
-          <Label>Skills zuweisen ({type})</Label>
+          <Label>Skills zuweisen ({TYPE_LABELS[type]})</Label>
           <div className="flex flex-wrap gap-2">
             {filteredSkills.map((skill) => (
               <button
@@ -172,16 +188,19 @@ export default function CreatureCreator() {
                     : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
                 }`}
               >
-                {skill.name}
+                {skill.name} <span className="opacity-60">({skill.kind === "attack" ? "⚔️" : "🛡️"})</span>
               </button>
             ))}
           </div>
+          {skillValidationError && (
+            <p className="text-destructive text-xs font-medium">{skillValidationError}</p>
+          )}
         </div>
       )}
 
       <Button
         onClick={() => createMutation.mutate()}
-        disabled={!name || createMutation.isPending}
+        disabled={!name || createMutation.isPending || !!skillValidationError}
         className="w-full"
       >
         {createMutation.isPending ? "Wird erstellt..." : "Kreatur erstellen"}

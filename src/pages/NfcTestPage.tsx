@@ -9,10 +9,6 @@ import RarityBadge from "@/components/admin/RarityBadge";
 import { FORM_LABELS } from "@/lib/constants";
 import { Nfc, ArrowLeft } from "lucide-react";
 
-// NOTE: Web NFC API ist nur in Chrome auf Android verfügbar.
-// Für iOS wird später ein Capacitor NFC Plugin benötigt (z.B. @niceplugins/capacitor-nfc).
-// Capacitor-Plugin für NFC auf iOS: https://github.com/niceplugins/capacitor-nfc
-
 interface CreatureData {
   name: string;
   description: string | null;
@@ -21,7 +17,6 @@ interface CreatureData {
   form: string;
   base_strength: number;
   base_speed: number;
-  base_endurance: number;
   base_magic: number;
   max_active_skills: number;
   image_url: string | null;
@@ -69,7 +64,6 @@ export default function NfcTestPage() {
       });
       setStatus("found");
 
-      // Update first_scanned_at if null
       if (!card.first_scanned_at) {
         await supabase.from("nfc_cards").update({ first_scanned_at: new Date().toISOString() }).eq("id", card.id);
       }
@@ -80,7 +74,6 @@ export default function NfcTestPage() {
   };
 
   const startNfcScan = async () => {
-    // Web NFC API Check
     if (!("NDEFReader" in window)) {
       setStatus("unsupported");
       setErrorMsg(
@@ -120,7 +113,6 @@ export default function NfcTestPage() {
         <div className="w-5" />
       </div>
 
-      {/* NFC Scan Button */}
       <div className="space-y-4">
         <Button
           onClick={startNfcScan}
@@ -131,7 +123,6 @@ export default function NfcTestPage() {
           {status === "scanning" ? "Scanne..." : "Karte scannen"}
         </Button>
 
-        {/* Manual UID Input */}
         <div className="space-y-2">
           <Label className="text-muted-foreground text-xs">Oder UID manuell eingeben:</Label>
           <div className="flex gap-2">
@@ -148,7 +139,6 @@ export default function NfcTestPage() {
         </div>
       </div>
 
-      {/* Results */}
       <div className="mt-6">
         {status === "scanning" && (
           <div className="text-center py-8">
@@ -195,11 +185,10 @@ export default function NfcTestPage() {
               </span>
             </div>
 
-            <div className="grid grid-cols-4 gap-2 text-center">
+            <div className="grid grid-cols-3 gap-2 text-center">
               {[
                 { label: "STR", value: creature.base_strength },
                 { label: "SPD", value: creature.base_speed },
-                { label: "END", value: creature.base_endurance },
                 { label: "MAG", value: creature.base_magic },
               ].map(({ label, value }) => (
                 <div key={label} className="bg-secondary rounded p-2">
@@ -232,7 +221,6 @@ export default function NfcTestPage() {
         )}
       </div>
 
-      {/* Write Mode Placeholder */}
       <div className="mt-8 border border-dashed border-border rounded-lg p-4 text-center">
         <p className="text-xs text-muted-foreground font-mono">
           📝 Schreib-Modus (zukünftig): Hier wird später die Möglichkeit eingebaut,
