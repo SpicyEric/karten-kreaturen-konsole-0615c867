@@ -7,6 +7,7 @@ import { Link } from "react-router-dom";
 import TypeBadge from "@/components/admin/TypeBadge";
 import RarityBadge from "@/components/admin/RarityBadge";
 import { FORM_LABELS, RARITY_MAX_SKILL_POINTS } from "@/lib/constants";
+import CreatureSpritePreview from "@/components/CreatureSpritePreview";
 import { Nfc, ArrowLeft } from "lucide-react";
 
 interface CreatureData {
@@ -20,7 +21,16 @@ interface CreatureData {
   base_intelligence: number;
   max_active_skills: number;
   max_skill_points: number;
-  image_url: string | null;
+  sprite_frame_size?: number | null;
+  sprite_fps?: number | null;
+  sprite_idle_url?: string | null;
+  sprite_idle_frames?: number | null;
+  sprite_attack_url?: string | null;
+  sprite_attack_frames?: number | null;
+  sprite_hit_url?: string | null;
+  sprite_hit_frames?: number | null;
+  sprite_die_url?: string | null;
+  sprite_die_frames?: number | null;
   card_instance?: {
     skill_points: number;
     current_skill_points: number;
@@ -178,6 +188,8 @@ export default function NfcTestPage() {
               <h2 className="font-mono text-2xl font-bold">{creature.name}</h2>
               {creature.description && <p className="text-sm text-muted-foreground">{creature.description}</p>}
             </div>
+
+            <CreatureSpritePreview creature={creature} scale={2} />
 
             <div className="flex flex-wrap gap-2">
               <TypeBadge type={creature.type} />

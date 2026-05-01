@@ -116,11 +116,20 @@ export type Database = {
           description: string | null
           form: Database["public"]["Enums"]["creature_form"]
           id: string
-          image_url: string | null
           max_active_skills: number
           max_skill_points: number
           name: string
           rarity: Database["public"]["Enums"]["creature_rarity"]
+          sprite_attack_frames: number | null
+          sprite_attack_url: string | null
+          sprite_die_frames: number | null
+          sprite_die_url: string | null
+          sprite_fps: number
+          sprite_frame_size: number
+          sprite_hit_frames: number | null
+          sprite_hit_url: string | null
+          sprite_idle_frames: number | null
+          sprite_idle_url: string | null
           type: Database["public"]["Enums"]["creature_type"]
         }
         Insert: {
@@ -131,11 +140,20 @@ export type Database = {
           description?: string | null
           form?: Database["public"]["Enums"]["creature_form"]
           id?: string
-          image_url?: string | null
           max_active_skills?: number
           max_skill_points?: number
           name: string
           rarity?: Database["public"]["Enums"]["creature_rarity"]
+          sprite_attack_frames?: number | null
+          sprite_attack_url?: string | null
+          sprite_die_frames?: number | null
+          sprite_die_url?: string | null
+          sprite_fps?: number
+          sprite_frame_size?: number
+          sprite_hit_frames?: number | null
+          sprite_hit_url?: string | null
+          sprite_idle_frames?: number | null
+          sprite_idle_url?: string | null
           type: Database["public"]["Enums"]["creature_type"]
         }
         Update: {
@@ -146,11 +164,20 @@ export type Database = {
           description?: string | null
           form?: Database["public"]["Enums"]["creature_form"]
           id?: string
-          image_url?: string | null
           max_active_skills?: number
           max_skill_points?: number
           name?: string
           rarity?: Database["public"]["Enums"]["creature_rarity"]
+          sprite_attack_frames?: number | null
+          sprite_attack_url?: string | null
+          sprite_die_frames?: number | null
+          sprite_die_url?: string | null
+          sprite_fps?: number
+          sprite_frame_size?: number
+          sprite_hit_frames?: number | null
+          sprite_hit_url?: string | null
+          sprite_idle_frames?: number | null
+          sprite_idle_url?: string | null
           type?: Database["public"]["Enums"]["creature_type"]
         }
         Relationships: []

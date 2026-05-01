@@ -18,7 +18,8 @@ import {
 import { generateCreatureName, generateDescription, generateStats } from "@/lib/creature-generators";
 import TypeBadge from "./TypeBadge";
 import RarityBadge from "./RarityBadge";
-import { Shuffle, Dices, CreditCard, Plus } from "lucide-react";
+import SpriteAnimator from "@/components/SpriteAnimator";
+import { Shuffle, Dices, CreditCard, Plus, Upload } from "lucide-react";
 import type { Database } from "@/integrations/supabase/types";
 
 type CreatureType = Database["public"]["Enums"]["creature_type"];
@@ -45,9 +46,42 @@ export default function CreatureCreator() {
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [rarity, setRarity] = useState<CreatureRarity>("gewoehnlich");
-  const [imageUrl, setImageUrl] = useState("");
+  
   const [stats, setStats] = useState<Record<StatKey, number>>({ strength: 6, speed: 6, intelligence: 6 });
   const [createdCreature, setCreatedCreature] = useState<CreatedCreature | null>(null);
+
+  // Sprite animations
+  const [frameSize, setFrameSize] = useState(64);
+  const [fps, setFps] = useState(8);
+  type SlotKey = "idle" | "attack" | "hit" | "die";
+  const [sprites, setSprites] = useState<Record<SlotKey, { url: string; frames: number; fileName: string }>>({
+    idle:   { url: "", frames: 4, fileName: "" },
+    attack: { url: "", frames: 4, fileName: "" },
+    hit:    { url: "", frames: 4, fileName: "" },
+    die:    { url: "", frames: 4, fileName: "" },
+  });
+  const [uploadingSlot, setUploadingSlot] = useState<SlotKey | null>(null);
+
+  const handleSpriteUpload = async (slot: SlotKey, file: File) => {
+    try {
+      setUploadingSlot(slot);
+      const ext = file.name.split(".").pop() || "png";
+      const path = `${slot}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+      const { error: upErr } = await supabase.storage.from("sprites").upload(path, file, {
+        cacheControl: "3600",
+        upsert: false,
+        contentType: file.type || "image/png",
+      });
+      if (upErr) throw upErr;
+      const { data: pub } = supabase.storage.from("sprites").getPublicUrl(path);
+      setSprites(prev => ({ ...prev, [slot]: { ...prev[slot], url: pub.publicUrl, fileName: file.name } }));
+      toast.success(`${slot} hochgeladen`);
+    } catch (e: any) {
+      toast.error("Upload fehlgeschlagen: " + e.message);
+    } finally {
+      setUploadingSlot(null);
+    }
+  };
 
   const { data: skills } = useQuery({
     queryKey: ["skills"],
@@ -115,8 +149,17 @@ export default function CreatureCreator() {
         base_intelligence: stats.intelligence,
         max_active_skills: 3,
         max_skill_points: maxSkillPoints,
-        image_url: imageUrl || null,
-      }).select().single();
+        sprite_frame_size: frameSize,
+        sprite_fps: fps,
+        sprite_idle_url: sprites.idle.url || null,
+        sprite_idle_frames: sprites.idle.url ? sprites.idle.frames : null,
+        sprite_attack_url: sprites.attack.url || null,
+        sprite_attack_frames: sprites.attack.url ? sprites.attack.frames : null,
+        sprite_hit_url: sprites.hit.url || null,
+        sprite_hit_frames: sprites.hit.url ? sprites.hit.frames : null,
+        sprite_die_url: sprites.die.url || null,
+        sprite_die_frames: sprites.die.url ? sprites.die.frames : null,
+      } as any).select().single();
       if (error) throw error;
 
       const assignedSkills: { id: string; name: string; kind: string }[] = [];
@@ -164,7 +207,12 @@ export default function CreatureCreator() {
     setCreatedCreature(null);
     setName("");
     setDescription("");
-    setImageUrl("");
+    setSprites({
+      idle:   { url: "", frames: 4, fileName: "" },
+      attack: { url: "", frames: 4, fileName: "" },
+      hit:    { url: "", frames: 4, fileName: "" },
+      die:    { url: "", frames: 4, fileName: "" },
+    });
     randomizeStats();
   };
 
@@ -304,10 +352,91 @@ export default function CreatureCreator() {
         </Select>
       </div>
 
-      {/* 5. Bild URL */}
-      <div className="space-y-2">
-        <Label>Bild URL (optional)</Label>
-        <Input value={imageUrl} onChange={(e) => setImageUrl(e.target.value)} placeholder="https://..." />
+      {/* 5. Animationen */}
+      <div className="space-y-3 border border-border rounded-lg p-3">
+        <Label className="text-base">Animationen (Sprite-Sheets)</Label>
+
+        <div className="grid grid-cols-2 gap-2">
+          <div className="space-y-1">
+            <Label className="text-xs text-muted-foreground">Frame Größe (px)</Label>
+            <Input type="number" min={8} max={512} value={frameSize}
+              onChange={(e) => setFrameSize(Math.max(1, parseInt(e.target.value) || 64))} />
+          </div>
+          <div className="space-y-1">
+            <Label className="text-xs text-muted-foreground">FPS</Label>
+            <Input type="number" min={1} max={60} value={fps}
+              onChange={(e) => setFps(Math.max(1, parseInt(e.target.value) || 8))} />
+          </div>
+        </div>
+
+        {(["idle", "attack", "hit", "die"] as const).map((slot) => {
+          const labels = { idle: "Idle", attack: "Angriff", hit: "Schaden", die: "Sterben" };
+          const loop = slot === "idle";
+          const s = sprites[slot];
+          return (
+            <div key={slot} className="border border-border/60 rounded-md p-2 space-y-2 bg-secondary/20">
+              <div className="flex items-center justify-between">
+                <span className="font-mono text-sm font-bold">{labels[slot]}</span>
+                <label className="cursor-pointer">
+                  <input
+                    type="file"
+                    accept="image/png"
+                    className="hidden"
+                    onChange={(e) => {
+                      const f = e.target.files?.[0];
+                      if (f) handleSpriteUpload(slot, f);
+                      e.target.value = "";
+                    }}
+                  />
+                  <span className="inline-flex items-center gap-1 text-xs bg-secondary hover:bg-secondary/80 px-2 py-1 rounded">
+                    <Upload size={12} />
+                    {uploadingSlot === slot ? "Lädt..." : "PNG hochladen"}
+                  </span>
+                </label>
+              </div>
+
+              {s.fileName && (
+                <div className="text-[10px] text-muted-foreground font-mono truncate">{s.fileName}</div>
+              )}
+
+              <div className="flex items-end gap-2">
+                <div className="flex-1 space-y-1">
+                  <Label className="text-xs text-muted-foreground">Anzahl Frames</Label>
+                  <Input
+                    type="number"
+                    min={1}
+                    max={64}
+                    value={s.frames}
+                    onChange={(e) => setSprites(prev => ({
+                      ...prev,
+                      [slot]: { ...prev[slot], frames: Math.max(1, parseInt(e.target.value) || 1) },
+                    }))}
+                  />
+                </div>
+                <div className="bg-muted rounded p-1">
+                  {s.url ? (
+                    <SpriteAnimator
+                      key={`${slot}-${s.url}-${s.frames}-${frameSize}-${fps}`}
+                      src={s.url}
+                      frameCount={s.frames}
+                      frameSize={frameSize}
+                      fps={fps}
+                      loop={loop}
+                      scale={1}
+                    />
+                  ) : (
+                    <div
+                      style={{ width: frameSize, height: frameSize }}
+                      className="bg-secondary rounded text-[10px] text-muted-foreground flex items-center justify-center font-mono"
+                    >
+                      –
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          );
+        })}
       </div>
 
       {/* 6. Stats */}
