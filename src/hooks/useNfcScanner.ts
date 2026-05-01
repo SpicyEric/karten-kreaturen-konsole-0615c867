@@ -11,7 +11,7 @@ export function useNfcScanner(onUid: (uid: string) => void) {
   const [scanning, setScanning] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const abortRef = useRef<AbortController | null>(null);
-  const nativeListenerRef = useRef<{ remove: () => void } | null>(null);
+  
 
   const unsubscribeRef = useRef<(() => void) | null>(null);
 
