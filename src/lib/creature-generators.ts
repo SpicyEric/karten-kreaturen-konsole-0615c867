@@ -1,4 +1,4 @@
-import { TYPE_PRIMARY_STAT, STAT_MIN, STAT_MAX, STAT_TOTAL } from './constants';
+import { TYPE_PRIMARY_STAT, STAT_MIN, STAT_MAX, RARITY_STAT_RANGE } from './constants';
 
 // ── Pokémon blacklist (Generation 1-9 sample + common ones) ──
 const POKEMON_BLACKLIST = new Set([
@@ -167,46 +167,54 @@ export function generateDescription(type: string): string {
   return pick(pool);
 }
 
-// ── Stats generator (30 points total, bias by type) ──
-export function generateStats(type: string): { strength: number; speed: number; intelligence: number } {
+// ── Stats generator: total depends on rarity range, biased by type ──
+export function generateStats(
+  type: string,
+  rarity: string = 'gewoehnlich'
+): { strength: number; speed: number; intelligence: number; total: number } {
+  const range = RARITY_STAT_RANGE[rarity] || RARITY_STAT_RANGE.gewoehnlich;
+  const total = range.min + Math.floor(Math.random() * (range.max - range.min + 1));
+
   const primary = TYPE_PRIMARY_STAT[type] || 'strength';
   const statKeys = ['strength', 'speed', 'intelligence'] as const;
-  
+
   // Primary gets 40-55% of total
   const primaryRatio = 0.40 + Math.random() * 0.15;
-  const primaryRaw = Math.round(STAT_TOTAL * primaryRatio);
-  const remaining = STAT_TOTAL - primaryRaw;
-  
-  // Split remaining randomly between other two
-  const splitRatio = 0.25 + Math.random() * 0.50; // 25%-75%
+  const primaryRaw = Math.round(total * primaryRatio);
+  const remaining = total - primaryRaw;
+
+  const splitRatio = 0.25 + Math.random() * 0.50;
   const secondRaw = Math.round(remaining * splitRatio);
   const thirdRaw = remaining - secondRaw;
-  
+
   const otherKeys = statKeys.filter(k => k !== primary);
   const raw: Record<string, number> = {
     [primary]: primaryRaw,
     [otherKeys[0]]: secondRaw,
     [otherKeys[1]]: thirdRaw,
   };
-  
-  // Clamp to min/max and redistribute
+
   const clamp = (v: number) => Math.max(STAT_MIN, Math.min(STAT_MAX, v));
   for (const k of statKeys) raw[k] = clamp(raw[k]);
-  
-  // Fix total after clamping
-  let total = raw.strength + raw.speed + raw.intelligence;
+
+  let actual = raw.strength + raw.speed + raw.intelligence;
   let attempts = 0;
-  while (total !== STAT_TOTAL && attempts < 50) {
-    const diff = STAT_TOTAL - total;
-    const candidates = statKeys.filter(k => 
+  while (actual !== total && attempts < 100) {
+    const diff = total - actual;
+    const candidates = statKeys.filter(k =>
       diff > 0 ? raw[k] < STAT_MAX : raw[k] > STAT_MIN
     );
     if (candidates.length === 0) break;
     const target = pick([...candidates]);
     raw[target] = clamp(raw[target] + (diff > 0 ? 1 : -1));
-    total = raw.strength + raw.speed + raw.intelligence;
+    actual = raw.strength + raw.speed + raw.intelligence;
     attempts++;
   }
-  
-  return { strength: raw.strength, speed: raw.speed, intelligence: raw.intelligence };
+
+  return {
+    strength: raw.strength,
+    speed: raw.speed,
+    intelligence: raw.intelligence,
+    total: actual,
+  };
 }

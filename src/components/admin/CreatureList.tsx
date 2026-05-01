@@ -7,7 +7,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { toast } from "sonner";
 import TypeBadge from "./TypeBadge";
 import RarityBadge from "./RarityBadge";
-import { KIND_ICONS } from "@/lib/constants";
+import { KIND_ICONS, RARITY_MAX_SKILL_POINTS } from "@/lib/constants";
 import { Trash2, CreditCard } from "lucide-react";
 
 export default function CreatureList() {
@@ -74,6 +74,11 @@ export default function CreatureList() {
                 </div>
               ))}
             </div>
+            <div className="text-[10px] font-mono text-muted-foreground text-center pt-1">
+              LEBEN {c.base_strength + c.base_speed + c.base_intelligence}
+              {" / "}
+              <span className="text-primary">{c.base_strength + c.base_speed + c.base_intelligence + (c.max_skill_points ?? RARITY_MAX_SKILL_POINTS[c.rarity] ?? 0)}</span>
+            </div>
           </button>
         ))}
       </div>
@@ -111,12 +116,23 @@ export default function CreatureList() {
                     </div>
                   ))}
                 </div>
-                <div className="bg-muted rounded p-2 text-center">
-                  <div className="text-xs text-muted-foreground font-mono">LEBEN</div>
-                  <div className="text-xl font-bold font-mono text-foreground">
-                    {selected.base_strength + selected.base_speed + selected.base_intelligence}
-                  </div>
-                </div>
+                {(() => {
+                  const baseTotal = selected.base_strength + selected.base_speed + selected.base_intelligence;
+                  const maxSp = selected.max_skill_points ?? RARITY_MAX_SKILL_POINTS[selected.rarity] ?? 0;
+                  return (
+                    <div className="grid grid-cols-2 gap-2">
+                      <div className="bg-muted rounded p-2 text-center">
+                        <div className="text-xs text-muted-foreground font-mono">LEBEN AKTUELL</div>
+                        <div className="text-xl font-bold font-mono text-foreground">{baseTotal}</div>
+                      </div>
+                      <div className="bg-muted rounded p-2 text-center">
+                        <div className="text-xs text-muted-foreground font-mono">LEBEN MAX</div>
+                        <div className="text-xl font-bold font-mono text-primary">{baseTotal + maxSp}</div>
+                        <div className="text-[10px] text-muted-foreground">+{maxSp} via Training</div>
+                      </div>
+                    </div>
+                  );
+                })()}
                 {selected.creature_skills && selected.creature_skills.length > 0 && (
                   <div className="space-y-1">
                     <p className="text-xs text-muted-foreground font-mono">Skills:</p>
