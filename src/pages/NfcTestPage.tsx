@@ -50,7 +50,7 @@ export default function NfcTestPage() {
   const [errorMsg, setErrorMsg] = useState("");
 
   const lookupCard = async (uid: string) => {
-    const normalizedUid = uid.trim().toUpperCase();
+    const normalizedUid = normalizeNfcUid(uid);
     setScannedUid(normalizedUid);
     setStatus("scanning");
 
