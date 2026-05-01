@@ -131,6 +131,7 @@ export default function NfcCardManager() {
 
   const selectedCreature = creatures?.find((c) => c.id === creatureId);
   const [scanning, setScanning] = useState(false);
+  const [scanAbort, setScanAbort] = useState<AbortController | null>(null);
 
   const startNfcScan = async () => {
     if (!("NDEFReader" in window)) {
@@ -139,23 +140,52 @@ export default function NfcCardManager() {
     }
     try {
       setScanning(true);
+      const controller = new AbortController();
+      setScanAbort(controller);
       const ndef = new (window as any).NDEFReader();
-      await ndef.scan();
+      await ndef.scan({ signal: controller.signal });
       toast.info("Halte eine NFC-Karte an dein Gerät...");
-      ndef.addEventListener("reading", ({ serialNumber }: any) => {
-        const scanned = String(serialNumber).toUpperCase();
-        setUid(scanned);
-        setScanning(false);
-        toast.success("UID gelesen: " + scanned);
-      });
-      ndef.addEventListener("readingerror", () => {
-        setScanning(false);
-        toast.error("Fehler beim Lesen der NFC-Karte.");
-      });
+
+      ndef.addEventListener(
+        "reading",
+        (event: any) => {
+          // Verhindert, dass Chrome bei leeren Tags die "leeres Tag"-UI zeigt
+          if (typeof event.preventDefault === "function") event.preventDefault();
+          const scanned = String(event.serialNumber || "").toUpperCase();
+          if (!scanned) {
+            toast.error("Karte hat keine lesbare UID.");
+            return;
+          }
+          setUid(scanned);
+          setScanning(false);
+          toast.success("UID gelesen: " + scanned);
+          // Scan sauber beenden, damit kein weiteres Tag-Event aufpoppt
+          controller.abort();
+          setScanAbort(null);
+        },
+        { signal: controller.signal }
+      );
+
+      ndef.addEventListener(
+        "readingerror",
+        () => {
+          toast.error("Fehler beim Lesen – Karte erneut anhalten.");
+        },
+        { signal: controller.signal }
+      );
     } catch (e: any) {
       setScanning(false);
-      toast.error("NFC Scan fehlgeschlagen: " + e.message);
+      setScanAbort(null);
+      if (e?.name !== "AbortError") {
+        toast.error("NFC Scan fehlgeschlagen: " + e.message);
+      }
     }
+  };
+
+  const cancelNfcScan = () => {
+    scanAbort?.abort();
+    setScanAbort(null);
+    setScanning(false);
   };
 
   return (
@@ -175,12 +205,11 @@ export default function NfcCardManager() {
             <Button
               type="button"
               variant="secondary"
-              onClick={startNfcScan}
-              disabled={scanning}
-              title="NFC-Karte scannen"
+              onClick={scanning ? cancelNfcScan : startNfcScan}
+              title={scanning ? "Scan abbrechen" : "NFC-Karte scannen"}
             >
               <Nfc size={16} className="mr-1" />
-              {scanning ? "Scanne..." : "Scan"}
+              {scanning ? "Abbrechen" : "Scan"}
             </Button>
           </div>
         </div>
