@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { CREATURE_TYPES, SKILL_TIERS, STAT_OPTIONS, SKILL_KINDS, TYPE_LABELS, TIER_LABELS, STAT_LABELS, KIND_LABELS } from "@/lib/constants";
+import { CREATURE_TYPES, SKILL_TIERS, STAT_OPTIONS_NEW, SKILL_KINDS, TYPE_LABELS, TIER_LABELS, STAT_LABELS, KIND_LABELS, KIND_ICONS } from "@/lib/constants";
 import TypeBadge from "./TypeBadge";
 import { Trash2 } from "lucide-react";
 
@@ -76,7 +76,7 @@ export default function SkillManager() {
           <Select value={kind} onValueChange={setKind}>
             <SelectTrigger><SelectValue /></SelectTrigger>
             <SelectContent>
-              {SKILL_KINDS.map((k) => <SelectItem key={k} value={k}>{KIND_LABELS[k]} {k === "attack" ? "⚔️" : "🛡️"}</SelectItem>)}
+              {SKILL_KINDS.map((k) => <SelectItem key={k} value={k}>{KIND_LABELS[k]} {KIND_ICONS[k]}</SelectItem>)}
             </SelectContent>
           </Select>
         </div>
@@ -103,7 +103,7 @@ export default function SkillManager() {
           <Select value={statAffected} onValueChange={setStatAffected}>
             <SelectTrigger><SelectValue /></SelectTrigger>
             <SelectContent>
-              {STAT_OPTIONS.map((s) => <SelectItem key={s} value={s}>{STAT_LABELS[s]}</SelectItem>)}
+              {STAT_OPTIONS_NEW.map((s) => <SelectItem key={s} value={s}>{STAT_LABELS[s]}</SelectItem>)}
             </SelectContent>
           </Select>
         </div>
@@ -125,7 +125,7 @@ export default function SkillManager() {
                   <TypeBadge type={skill.type} />
                   <div className="min-w-0">
                     <p className="font-medium text-sm truncate">
-                      {(skill as any).kind === "attack" ? "⚔️" : "🛡️"} {skill.name}
+                      {KIND_ICONS[(skill as any).kind] || ""} {skill.name}
                     </p>
                     <p className="text-xs text-muted-foreground">
                       {TIER_LABELS[skill.tier] || skill.tier} · {STAT_LABELS[skill.stat_affected] || skill.stat_affected}
