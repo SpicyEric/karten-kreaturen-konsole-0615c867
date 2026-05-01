@@ -372,7 +372,7 @@ export default function CreatureCreator() {
 
         {(["idle", "attack", "hit", "die"] as const).map((slot) => {
           const labels = { idle: "Idle", attack: "Angriff", hit: "Schaden", die: "Sterben" };
-          const loop = slot === "idle";
+          const loop = true;
           const s = sprites[slot];
           const isDragging = dragOverSlot === slot;
           return (
