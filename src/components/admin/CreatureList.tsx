@@ -101,6 +101,7 @@ export default function CreatureList() {
                 {selected.description && (
                   <p className="text-sm text-muted-foreground">{selected.description}</p>
                 )}
+                <CreatureSpritePreview creature={selected as any} scale={2} />
                 <div className="flex flex-wrap gap-2">
                   <TypeBadge type={selected.type} />
                   <RarityBadge rarity={selected.rarity} />
