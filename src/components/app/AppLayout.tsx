@@ -1,42 +1,32 @@
 import { ReactNode } from "react";
-import { NavLink, useLocation } from "react-router-dom";
-import { Dumbbell, User } from "lucide-react";
 
-export default function AppLayout({ children }: { children: ReactNode }) {
-  const { pathname } = useLocation();
-  const isProfile = pathname.startsWith("/app/profil");
+interface Props {
+  children: ReactNode;
+  /** Hintergrundbild URL (importiertes Asset) */
+  bgImage?: string;
+  /** Dunkler Overlay (0..1), default 0.55 */
+  overlay?: number;
+}
 
+export default function AppLayout({ children, bgImage, overlay = 0.55 }: Props) {
   return (
-    <div className="min-h-screen bg-[#0a0a0f] text-foreground flex flex-col">
-      <main className="flex-1 pb-20 overflow-y-auto">{children}</main>
-
-      <nav className="fixed bottom-0 left-0 right-0 bg-[#0f0f17] border-t border-border/60 backdrop-blur-md z-40">
-        <div className="grid grid-cols-2 max-w-md mx-auto">
-          <NavLink
-            to="/app"
-            end
-            className={() =>
-              `flex flex-col items-center justify-center gap-1 py-3 min-h-[56px] ${
-                !isProfile ? "text-primary" : "text-muted-foreground"
-              }`
-            }
-          >
-            <Dumbbell size={22} />
-            <span className="text-[11px] font-mono">Training</span>
-          </NavLink>
-          <NavLink
-            to="/app/profil"
-            className={() =>
-              `flex flex-col items-center justify-center gap-1 py-3 min-h-[56px] ${
-                isProfile ? "text-primary" : "text-muted-foreground"
-              }`
-            }
-          >
-            <User size={22} />
-            <span className="text-[11px] font-mono">Profil</span>
-          </NavLink>
-        </div>
-      </nav>
+    <div className="relative min-h-screen text-foreground overflow-hidden">
+      {bgImage && (
+        <div
+          className="absolute inset-0 bg-center bg-cover"
+          style={{ backgroundImage: `url(${bgImage})` }}
+          aria-hidden
+        />
+      )}
+      {bgImage && (
+        <div
+          className="absolute inset-0"
+          style={{ backgroundColor: `rgba(5, 8, 14, ${overlay})` }}
+          aria-hidden
+        />
+      )}
+      {!bgImage && <div className="absolute inset-0 bg-[#0a0a0f]" aria-hidden />}
+      <div className="relative z-10 min-h-screen flex flex-col">{children}</div>
     </div>
   );
 }
