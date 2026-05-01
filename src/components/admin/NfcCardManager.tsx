@@ -44,6 +44,30 @@ export default function NfcCardManager() {
     },
   });
 
+  // Wählt 2 Start-Skills: 1x Stein-Angriff (garantiert) + 1x beliebig (random aus allen Skills)
+  const pickStarterSkills = async (): Promise<string[]> => {
+    const { data: steinAttacks, error: e1 } = await supabase
+      .from("skills")
+      .select("id")
+      .eq("type", "stein")
+      .eq("kind", "attack");
+    if (e1) throw e1;
+    if (!steinAttacks || steinAttacks.length === 0) {
+      throw new Error("Keine Stein-Angriffsskills gefunden – bitte zuerst Skills anlegen.");
+    }
+    const stein = steinAttacks[Math.floor(Math.random() * steinAttacks.length)].id;
+
+    const { data: allSkills, error: e2 } = await supabase
+      .from("skills")
+      .select("id")
+      .neq("id", stein);
+    if (e2) throw e2;
+    const pool = allSkills ?? [];
+    const second = pool.length > 0 ? pool[Math.floor(Math.random() * pool.length)].id : null;
+
+    return second ? [stein, second] : [stein];
+  };
+
   const registerMutation = useMutation({
     mutationFn: async () => {
       const { data: card, error: cardError } = await supabase
@@ -53,14 +77,21 @@ export default function NfcCardManager() {
         .single();
       if (cardError) throw cardError;
 
+      const starters = await pickStarterSkills();
+
       const { error: instanceError } = await supabase
         .from("card_instances")
-        .insert({ nfc_card_id: card.id, creature_id: creatureId });
+        .insert({
+          nfc_card_id: card.id,
+          creature_id: creatureId,
+          unlocked_skills: starters,
+          active_skills: starters,
+        });
       if (instanceError) throw instanceError;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["nfc-cards"] });
-      toast.success("NFC Karte registriert!");
+      toast.success("NFC Karte registriert! 2 Start-Skills zugewiesen.");
       setUid(""); setCreatureId("");
     },
     onError: (e) => toast.error("Fehler: " + e.message),
@@ -71,13 +102,17 @@ export default function NfcCardManager() {
       const card = cards?.find((c) => c.id === cardId);
       if (!card) return;
       await supabase.from("card_instances").delete().eq("nfc_card_id", cardId);
+      const starters = await pickStarterSkills();
       await supabase.from("card_instances").insert({
-        nfc_card_id: cardId, creature_id: card.creature_id,
+        nfc_card_id: cardId,
+        creature_id: card.creature_id,
+        unlocked_skills: starters,
+        active_skills: starters,
       });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["nfc-cards"] });
-      toast.success("Karten-Instanz zurückgesetzt!");
+      toast.success("Karten-Instanz zurückgesetzt – neue Start-Skills vergeben!");
     },
     onError: (e) => toast.error("Fehler: " + e.message),
   });
