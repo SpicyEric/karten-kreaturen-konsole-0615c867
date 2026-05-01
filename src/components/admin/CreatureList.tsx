@@ -7,7 +7,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { toast } from "sonner";
 import TypeBadge from "./TypeBadge";
 import RarityBadge from "./RarityBadge";
-import { KIND_ICONS } from "@/lib/constants";
+import { KIND_ICONS, RARITY_MAX_SKILL_POINTS } from "@/lib/constants";
 import { Trash2, CreditCard } from "lucide-react";
 
 export default function CreatureList() {

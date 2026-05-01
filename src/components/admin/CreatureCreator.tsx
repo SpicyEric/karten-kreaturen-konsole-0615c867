@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -12,7 +12,8 @@ import {
   CREATURE_TYPES, CREATURE_RARITIES,
   TYPE_LABELS, RARITY_LABELS,
   TYPE_PRIMARY_STAT, STAT_LABELS,
-  STAT_TOTAL, STAT_MIN, STAT_MAX, KIND_ICONS,
+  STAT_MIN, STAT_MAX, KIND_ICONS,
+  RARITY_STAT_RANGE, RARITY_MAX_SKILL_POINTS,
 } from "@/lib/constants";
 import { generateCreatureName, generateDescription, generateStats } from "@/lib/creature-generators";
 import TypeBadge from "./TypeBadge";
@@ -22,7 +23,6 @@ import type { Database } from "@/integrations/supabase/types";
 
 type CreatureType = Database["public"]["Enums"]["creature_type"];
 type CreatureRarity = Database["public"]["Enums"]["creature_rarity"];
-
 type StatKey = "strength" | "speed" | "intelligence";
 
 interface CreatedCreature {
@@ -33,6 +33,7 @@ interface CreatedCreature {
   base_strength: number;
   base_speed: number;
   base_intelligence: number;
+  max_skill_points: number;
   skills: { name: string; kind: string }[];
 }
 
@@ -45,7 +46,7 @@ export default function CreatureCreator() {
   const [description, setDescription] = useState("");
   const [rarity, setRarity] = useState<CreatureRarity>("gewoehnlich");
   const [imageUrl, setImageUrl] = useState("");
-  const [stats, setStats] = useState<Record<StatKey, number>>({ strength: 10, speed: 10, intelligence: 10 });
+  const [stats, setStats] = useState<Record<StatKey, number>>({ strength: 6, speed: 6, intelligence: 6 });
   const [createdCreature, setCreatedCreature] = useState<CreatedCreature | null>(null);
 
   const { data: skills } = useQuery({
@@ -58,49 +59,28 @@ export default function CreatureCreator() {
   });
 
   const primaryStat = (TYPE_PRIMARY_STAT[type] || "strength") as StatKey;
-  const hp = stats.strength + stats.speed + stats.intelligence;
+  const range = RARITY_STAT_RANGE[rarity];
+  const maxSkillPoints = RARITY_MAX_SKILL_POINTS[rarity];
+  const total = stats.strength + stats.speed + stats.intelligence;
+  const hp = total;
+  const maxHp = total + maxSkillPoints;
+  const totalInRange = total >= range.min && total <= range.max;
+
   const typeSkills = skills?.filter(s => s.type === type) || [];
   const typeAttackSkills = typeSkills.filter(s => s.kind === "attack");
 
-  // Linked sliders: changing one redistributes from the others
+  // Free sliders, but warn if outside the rarity range.
   const setStat = (key: StatKey, newValue: number) => {
     const clamped = Math.max(STAT_MIN, Math.min(STAT_MAX, newValue));
-    const others = (["strength", "speed", "intelligence"] as StatKey[]).filter(k => k !== key);
-    const oldValue = stats[key];
-    const diff = clamped - oldValue;
-    if (diff === 0) return;
-
-    const next = { ...stats, [key]: clamped };
-    let remaining = -diff; // we need to add this to others combined
-
-    // Distribute remaining among others, clamping
-    const otherValues = { [others[0]]: stats[others[0]], [others[1]]: stats[others[1]] };
-    
-    // Try to distribute evenly first
-    while (remaining !== 0) {
-      const dir = remaining > 0 ? 1 : -1;
-      const candidates = others.filter(k => 
-        dir > 0 ? otherValues[k] < STAT_MAX : otherValues[k] > STAT_MIN
-      );
-      if (candidates.length === 0) break;
-      const target = candidates[Math.floor(Math.random() * candidates.length)];
-      otherValues[target] += dir;
-      remaining -= dir;
-    }
-
-    next[others[0]] = otherValues[others[0]];
-    next[others[1]] = otherValues[others[1]];
-
-    // Verify total; if not 30 (due to clamping limits), revert this change
-    const total = next.strength + next.speed + next.intelligence;
-    if (total !== STAT_TOTAL) return;
-
-    setStats(next);
+    setStats({ ...stats, [key]: clamped });
   };
 
   const randomizeName = () => setName(generateCreatureName(type));
   const randomizeDescription = () => setDescription(generateDescription(type));
-  const randomizeStats = () => setStats(generateStats(type));
+  const randomizeStats = () => {
+    const s = generateStats(type, rarity);
+    setStats({ strength: s.strength, speed: s.speed, intelligence: s.intelligence });
+  };
 
   const randomizeAll = () => {
     randomizeName();
@@ -108,14 +88,11 @@ export default function CreatureCreator() {
     randomizeStats();
   };
 
-  // Reset stats validity when total drifts (initial state has 30)
+  // Re-roll stats whenever rarity changes (so total fits the new range)
   useEffect(() => {
-    const total = stats.strength + stats.speed + stats.intelligence;
-    if (total !== STAT_TOTAL) {
-      setStats(generateStats(type));
-    }
+    randomizeStats();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [rarity]);
 
   const createMutation = useMutation({
     mutationFn: async () => {
@@ -129,11 +106,11 @@ export default function CreatureCreator() {
         base_speed: stats.speed,
         base_intelligence: stats.intelligence,
         max_active_skills: 3,
+        max_skill_points: maxSkillPoints,
         image_url: imageUrl || null,
       }).select().single();
       if (error) throw error;
 
-      // Auto-assign 2 starting skills (min 1 attack)
       const assignedSkills: { id: string; name: string; kind: string }[] = [];
       if (typeAttackSkills.length > 0) {
         const attack = typeAttackSkills[Math.floor(Math.random() * typeAttackSkills.length)];
@@ -163,6 +140,7 @@ export default function CreatureCreator() {
         base_strength: creature.base_strength,
         base_speed: creature.base_speed,
         base_intelligence: creature.base_intelligence,
+        max_skill_points: creature.max_skill_points,
         skills: assignedSkills.map(s => ({ name: s.name, kind: s.kind })),
       } as CreatedCreature;
     },
@@ -179,11 +157,12 @@ export default function CreatureCreator() {
     setName("");
     setDescription("");
     setImageUrl("");
-    setStats(generateStats(type));
+    randomizeStats();
   };
 
   // ── Success state ──
   if (createdCreature) {
+    const baseTotal = createdCreature.base_strength + createdCreature.base_speed + createdCreature.base_intelligence;
     return (
       <div className="space-y-6">
         <div className="bg-card border border-primary/40 rounded-lg p-6 space-y-4">
@@ -207,10 +186,16 @@ export default function CreatureCreator() {
               </div>
             ))}
           </div>
-          <div className="bg-muted rounded p-3 text-center">
-            <div className="text-xs text-muted-foreground font-mono">LEBEN</div>
-            <div className="text-2xl font-bold font-mono text-foreground">
-              {createdCreature.base_strength + createdCreature.base_speed + createdCreature.base_intelligence}
+          <div className="grid grid-cols-2 gap-2">
+            <div className="bg-muted rounded p-3 text-center">
+              <div className="text-xs text-muted-foreground font-mono">LEBEN</div>
+              <div className="text-2xl font-bold font-mono text-foreground">
+                {baseTotal} <span className="text-sm text-muted-foreground">/ {baseTotal + createdCreature.max_skill_points}</span>
+              </div>
+            </div>
+            <div className="bg-muted rounded p-3 text-center">
+              <div className="text-xs text-muted-foreground font-mono">MAX SKILL-PUNKTE</div>
+              <div className="text-2xl font-bold font-mono text-foreground">+{createdCreature.max_skill_points}</div>
             </div>
           </div>
           {createdCreature.skills.length > 0 && (
@@ -303,7 +288,9 @@ export default function CreatureCreator() {
           <SelectTrigger><SelectValue /></SelectTrigger>
           <SelectContent>
             {CREATURE_RARITIES.map((r) => (
-              <SelectItem key={r} value={r}>{RARITY_LABELS[r]}</SelectItem>
+              <SelectItem key={r} value={r}>
+                {RARITY_LABELS[r]} ({RARITY_STAT_RANGE[r].min}-{RARITY_STAT_RANGE[r].max} Stats, +{RARITY_MAX_SKILL_POINTS[r]} SP)
+              </SelectItem>
             ))}
           </SelectContent>
         </Select>
@@ -319,12 +306,17 @@ export default function CreatureCreator() {
       <div className="space-y-3">
         <div className="flex items-center justify-between">
           <h3 className="font-mono text-sm text-muted-foreground">
-            Stats <span className="text-xs">(Σ = {STAT_TOTAL}, Primär: <strong className="text-primary">{STAT_LABELS[primaryStat]}</strong>)</span>
+            Stats (Primär: <strong className="text-primary">{STAT_LABELS[primaryStat]}</strong>)
           </h3>
           <Button onClick={randomizeStats} variant="ghost" size="sm" className="gap-2 text-xs">
             <Dices size={12} />
             Zufällige Stats
           </Button>
+        </div>
+
+        <div className={`text-xs font-mono px-3 py-2 rounded ${totalInRange ? "bg-secondary/40 text-muted-foreground" : "bg-destructive/10 text-destructive border border-destructive/30"}`}>
+          {total} / {range.min}–{range.max} Punkte ({RARITY_LABELS[rarity]})
+          {!totalInRange && " ⚠️ außerhalb des Bereichs"}
         </div>
 
         {statList.map(({ key, label }) => (
@@ -345,17 +337,20 @@ export default function CreatureCreator() {
           </div>
         ))}
 
-        {/* Leben (HP) */}
-        <div className="bg-muted rounded-lg p-3 flex items-center justify-between mt-4">
+        {/* Leben */}
+        <div className="bg-muted rounded-lg p-3 grid grid-cols-2 gap-3 mt-4">
           <div>
-            <div className="text-xs text-muted-foreground font-mono">LEBEN (HP)</div>
-            <div className="text-xs text-muted-foreground">Stärke + Geschwindigkeit + Intelligenz</div>
+            <div className="text-xs text-muted-foreground font-mono">LEBEN AKTUELL</div>
+            <div className="text-2xl font-bold font-mono text-foreground">{hp}</div>
           </div>
-          <div className="text-3xl font-bold font-mono text-foreground">{hp}</div>
+          <div>
+            <div className="text-xs text-muted-foreground font-mono">LEBEN MAX</div>
+            <div className="text-2xl font-bold font-mono text-primary">{maxHp}</div>
+            <div className="text-[10px] text-muted-foreground">+{maxSkillPoints} durch Training</div>
+          </div>
         </div>
       </div>
 
-      {/* Skill assignment hint */}
       {typeAttackSkills.length === 0 && (
         <div className="bg-destructive/10 border border-destructive/30 rounded-lg p-3 text-sm text-destructive">
           ⚠️ Es existiert noch kein Angriffs-Skill für Typ {TYPE_LABELS[type]}. Die Kreatur wird ohne Start-Skills erstellt.
@@ -369,7 +364,7 @@ export default function CreatureCreator() {
 
       <Button
         onClick={() => createMutation.mutate()}
-        disabled={!name || createMutation.isPending}
+        disabled={!name || !totalInRange || createMutation.isPending}
         className="w-full"
         size="lg"
       >
