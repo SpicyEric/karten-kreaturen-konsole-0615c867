@@ -1,5 +1,6 @@
 import { useCallback, useRef, useState } from "react";
 import { Capacitor } from "@capacitor/core";
+import { normalizeNfcUid } from "@/lib/utils";
 
 /**
  * NFC Scanner Hook – funktioniert sowohl auf nativem Android (Capacitor + @exxili/capacitor-nfc)
