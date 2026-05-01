@@ -106,7 +106,7 @@ export type Database = {
       }
       creatures: {
         Row: {
-          base_magic: number
+          base_intelligence: number
           base_speed: number
           base_strength: number
           created_at: string
@@ -120,7 +120,7 @@ export type Database = {
           type: Database["public"]["Enums"]["creature_type"]
         }
         Insert: {
-          base_magic?: number
+          base_intelligence?: number
           base_speed?: number
           base_strength?: number
           created_at?: string
@@ -134,7 +134,7 @@ export type Database = {
           type: Database["public"]["Enums"]["creature_type"]
         }
         Update: {
-          base_magic?: number
+          base_intelligence?: number
           base_speed?: number
           base_strength?: number
           created_at?: string
