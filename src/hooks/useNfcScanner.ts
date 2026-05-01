@@ -98,7 +98,7 @@ export function useNfcScanner(onUid: (uid: string) => void) {
         "reading",
         (event: any) => {
           if (typeof event.preventDefault === "function") event.preventDefault();
-          const uid = String(event.serialNumber || "").replace(/[:\s]/g, "").toUpperCase();
+          const uid = normalizeNfcUid(event.serialNumber || "");
           if (!uid) return;
           onUid(uid);
           controller.abort();
