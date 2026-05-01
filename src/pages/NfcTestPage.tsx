@@ -7,6 +7,7 @@ import { Link } from "react-router-dom";
 import TypeBadge from "@/components/admin/TypeBadge";
 import RarityBadge from "@/components/admin/RarityBadge";
 import { FORM_LABELS, RARITY_MAX_SKILL_POINTS } from "@/lib/constants";
+import CreatureSpritePreview from "@/components/CreatureSpritePreview";
 import { Nfc, ArrowLeft } from "lucide-react";
 
 interface CreatureData {
