@@ -17,7 +17,7 @@ interface CreatureData {
   form: string;
   base_strength: number;
   base_speed: number;
-  base_magic: number;
+  base_intelligence: number;
   max_active_skills: number;
   image_url: string | null;
   card_instance?: {
@@ -189,7 +189,7 @@ export default function NfcTestPage() {
               {[
                 { label: "STR", value: creature.base_strength },
                 { label: "SPD", value: creature.base_speed },
-                { label: "MAG", value: creature.base_magic },
+                { label: "INT", value: creature.base_intelligence },
               ].map(({ label, value }) => (
                 <div key={label} className="bg-secondary rounded p-2">
                   <div className="text-xs text-muted-foreground font-mono">{label}</div>

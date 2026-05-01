@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
@@ -7,27 +8,45 @@ import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { CREATURE_TYPES, CREATURE_RARITIES, CREATURE_FORMS, TYPE_LABELS, RARITY_LABELS, FORM_LABELS, TYPE_PRIMARY_STAT, STAT_LABELS } from "@/lib/constants";
+import {
+  CREATURE_TYPES, CREATURE_RARITIES,
+  TYPE_LABELS, RARITY_LABELS,
+  TYPE_PRIMARY_STAT, STAT_LABELS,
+  STAT_TOTAL, STAT_MIN, STAT_MAX, KIND_ICONS,
+} from "@/lib/constants";
+import { generateCreatureName, generateDescription, generateStats } from "@/lib/creature-generators";
+import TypeBadge from "./TypeBadge";
+import RarityBadge from "./RarityBadge";
+import { Shuffle, Dices, CreditCard, Plus } from "lucide-react";
 import type { Database } from "@/integrations/supabase/types";
 
-type CreatureInsert = Database["public"]["Tables"]["creatures"]["Insert"];
 type CreatureType = Database["public"]["Enums"]["creature_type"];
 type CreatureRarity = Database["public"]["Enums"]["creature_rarity"];
-type CreatureForm = Database["public"]["Enums"]["creature_form"];
+
+type StatKey = "strength" | "speed" | "intelligence";
+
+interface CreatedCreature {
+  id: string;
+  name: string;
+  type: string;
+  rarity: string;
+  base_strength: number;
+  base_speed: number;
+  base_intelligence: number;
+  skills: { name: string; kind: string }[];
+}
 
 export default function CreatureCreator() {
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
+
+  const [type, setType] = useState<CreatureType>("feuer");
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
-  const [type, setType] = useState<CreatureType>("feuer");
   const [rarity, setRarity] = useState<CreatureRarity>("gewoehnlich");
-  const [form, setForm] = useState<CreatureForm>("standard");
-  const [strength, setStrength] = useState(10);
-  const [speed, setSpeed] = useState(10);
-  const [magic, setMagic] = useState(10);
-  const [maxActiveSkills, setMaxActiveSkills] = useState(3);
   const [imageUrl, setImageUrl] = useState("");
-  const [selectedSkills, setSelectedSkills] = useState<string[]>([]);
+  const [stats, setStats] = useState<Record<StatKey, number>>({ strength: 10, speed: 10, intelligence: 10 });
+  const [createdCreature, setCreatedCreature] = useState<CreatedCreature | null>(null);
 
   const { data: skills } = useQuery({
     queryKey: ["skills"],
@@ -38,170 +57,321 @@ export default function CreatureCreator() {
     },
   });
 
-  const filteredSkills = skills?.filter((s) => s.type === type) || [];
+  const primaryStat = (TYPE_PRIMARY_STAT[type] || "strength") as StatKey;
+  const hp = stats.strength + stats.speed + stats.intelligence;
+  const typeSkills = skills?.filter(s => s.type === type) || [];
+  const typeAttackSkills = typeSkills.filter(s => s.kind === "attack");
 
-  const primaryStat = TYPE_PRIMARY_STAT[type] || "strength";
+  // Linked sliders: changing one redistributes from the others
+  const setStat = (key: StatKey, newValue: number) => {
+    const clamped = Math.max(STAT_MIN, Math.min(STAT_MAX, newValue));
+    const others = (["strength", "speed", "intelligence"] as StatKey[]).filter(k => k !== key);
+    const oldValue = stats[key];
+    const diff = clamped - oldValue;
+    if (diff === 0) return;
 
-  // Validate: at least 1 attack skill if any skills selected
-  const selectedSkillObjects = skills?.filter((s) => selectedSkills.includes(s.id)) || [];
-  const attackCount = selectedSkillObjects.filter((s) => s.kind === "attack").length;
-  const defenceCount = selectedSkillObjects.filter((s) => s.kind === "defence").length;
-  const skillValidationError = selectedSkills.length > 0 && attackCount === 0
-    ? "Mindestens 1 Angriffs-Skill benötigt!"
-    : defenceCount >= 2
-      ? "Maximal 1 Verteidigungs-Skill erlaubt!"
-      : null;
+    const next = { ...stats, [key]: clamped };
+    let remaining = -diff; // we need to add this to others combined
+
+    // Distribute remaining among others, clamping
+    const otherValues = { [others[0]]: stats[others[0]], [others[1]]: stats[others[1]] };
+    
+    // Try to distribute evenly first
+    while (remaining !== 0) {
+      const dir = remaining > 0 ? 1 : -1;
+      const candidates = others.filter(k => 
+        dir > 0 ? otherValues[k] < STAT_MAX : otherValues[k] > STAT_MIN
+      );
+      if (candidates.length === 0) break;
+      const target = candidates[Math.floor(Math.random() * candidates.length)];
+      otherValues[target] += dir;
+      remaining -= dir;
+    }
+
+    next[others[0]] = otherValues[others[0]];
+    next[others[1]] = otherValues[others[1]];
+
+    // Verify total; if not 30 (due to clamping limits), revert this change
+    const total = next.strength + next.speed + next.intelligence;
+    if (total !== STAT_TOTAL) return;
+
+    setStats(next);
+  };
+
+  const randomizeName = () => setName(generateCreatureName(type));
+  const randomizeDescription = () => setDescription(generateDescription(type));
+  const randomizeStats = () => setStats(generateStats(type));
+
+  const randomizeAll = () => {
+    randomizeName();
+    randomizeDescription();
+    randomizeStats();
+  };
+
+  // Reset stats validity when total drifts (initial state has 30)
+  useEffect(() => {
+    const total = stats.strength + stats.speed + stats.intelligence;
+    if (total !== STAT_TOTAL) {
+      setStats(generateStats(type));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const createMutation = useMutation({
     mutationFn: async () => {
-      const creature: CreatureInsert = {
-        name, description: description || null, type, rarity, form,
-        base_strength: strength, base_speed: speed,
-        base_magic: magic, max_active_skills: maxActiveSkills,
+      const { data: creature, error } = await supabase.from("creatures").insert({
+        name,
+        description: description || null,
+        type,
+        rarity,
+        form: "standard",
+        base_strength: stats.strength,
+        base_speed: stats.speed,
+        base_intelligence: stats.intelligence,
+        max_active_skills: 3,
         image_url: imageUrl || null,
-      };
-      const { data, error } = await supabase.from("creatures").insert(creature).select().single();
+      }).select().single();
       if (error) throw error;
 
-      if (selectedSkills.length > 0) {
-        const links = selectedSkills.map((skillId, i) => ({
-          creature_id: data.id, skill_id: skillId, unlock_order: i + 1,
+      // Auto-assign 2 starting skills (min 1 attack)
+      const assignedSkills: { id: string; name: string; kind: string }[] = [];
+      if (typeAttackSkills.length > 0) {
+        const attack = typeAttackSkills[Math.floor(Math.random() * typeAttackSkills.length)];
+        assignedSkills.push({ id: attack.id, name: attack.name, kind: attack.kind });
+        const remainingPool = typeSkills.filter(s => s.id !== attack.id);
+        if (remainingPool.length > 0) {
+          const second = remainingPool[Math.floor(Math.random() * remainingPool.length)];
+          assignedSkills.push({ id: second.id, name: second.name, kind: second.kind });
+        }
+      }
+
+      if (assignedSkills.length > 0) {
+        const links = assignedSkills.map((s, i) => ({
+          creature_id: creature.id,
+          skill_id: s.id,
+          unlock_order: i + 1,
         }));
         const { error: linkError } = await supabase.from("creature_skills").insert(links);
         if (linkError) throw linkError;
       }
-      return data;
+
+      return {
+        id: creature.id,
+        name: creature.name,
+        type: creature.type,
+        rarity: creature.rarity,
+        base_strength: creature.base_strength,
+        base_speed: creature.base_speed,
+        base_intelligence: creature.base_intelligence,
+        skills: assignedSkills.map(s => ({ name: s.name, kind: s.kind })),
+      } as CreatedCreature;
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["creatures"] });
       toast.success("Kreatur erstellt!");
-      setName(""); setDescription(""); setSelectedSkills([]);
-      setStrength(10); setSpeed(10); setMagic(10);
+      setCreatedCreature(data);
     },
-    onError: (e) => toast.error("Fehler: " + e.message),
+    onError: (e: any) => toast.error("Fehler: " + e.message),
   });
 
-  const toggleSkill = (id: string) => {
-    setSelectedSkills((prev) =>
-      prev.includes(id) ? prev.filter((s) => s !== id) : [...prev, id]
-    );
+  const resetForm = () => {
+    setCreatedCreature(null);
+    setName("");
+    setDescription("");
+    setImageUrl("");
+    setStats(generateStats(type));
   };
 
-  const stats = [
-    { key: "strength", label: "Stärke", value: strength, set: setStrength },
-    { key: "speed", label: "Geschwindigkeit", value: speed, set: setSpeed },
-    { key: "magic", label: "Magie", value: magic, set: setMagic },
+  // ── Success state ──
+  if (createdCreature) {
+    return (
+      <div className="space-y-6">
+        <div className="bg-card border border-primary/40 rounded-lg p-6 space-y-4">
+          <div className="flex items-center gap-2 text-primary font-mono text-sm">
+            ✓ Kreatur erfolgreich erstellt
+          </div>
+          <h2 className="font-mono text-3xl font-bold">{createdCreature.name}</h2>
+          <div className="flex flex-wrap gap-2">
+            <TypeBadge type={createdCreature.type} />
+            <RarityBadge rarity={createdCreature.rarity} />
+          </div>
+          <div className="grid grid-cols-3 gap-2 text-center">
+            {[
+              { label: "STR", value: createdCreature.base_strength },
+              { label: "SPD", value: createdCreature.base_speed },
+              { label: "INT", value: createdCreature.base_intelligence },
+            ].map(({ label, value }) => (
+              <div key={label} className="bg-secondary rounded p-3">
+                <div className="text-xs text-muted-foreground font-mono">{label}</div>
+                <div className="text-2xl font-bold font-mono text-primary">{value}</div>
+              </div>
+            ))}
+          </div>
+          <div className="bg-muted rounded p-3 text-center">
+            <div className="text-xs text-muted-foreground font-mono">LEBEN</div>
+            <div className="text-2xl font-bold font-mono text-foreground">
+              {createdCreature.base_strength + createdCreature.base_speed + createdCreature.base_intelligence}
+            </div>
+          </div>
+          {createdCreature.skills.length > 0 && (
+            <div className="space-y-1">
+              <p className="text-xs text-muted-foreground font-mono">Start-Skills:</p>
+              <div className="flex flex-wrap gap-1">
+                {createdCreature.skills.map((s, i) => (
+                  <span key={i} className="text-xs bg-accent/20 text-accent-foreground px-2 py-0.5 rounded">
+                    {KIND_ICONS[s.kind]} {s.name}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <Button
+            onClick={() => navigate(`/admin/cards?creatureId=${createdCreature.id}`)}
+            className="w-full gap-2"
+          >
+            <CreditCard size={16} />
+            Diese Kreatur einer NFC-Karte zuweisen
+          </Button>
+          <Button onClick={resetForm} variant="secondary" className="w-full gap-2">
+            <Plus size={16} />
+            Neue Kreatur erstellen
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  // ── Form ──
+  const statList: { key: StatKey; label: string }[] = [
+    { key: "strength", label: STAT_LABELS.strength },
+    { key: "speed", label: STAT_LABELS.speed },
+    { key: "intelligence", label: STAT_LABELS.intelligence },
   ];
 
   return (
     <div className="space-y-6">
-      <h2 className="font-mono text-xl font-bold">Neue Kreatur erstellen</h2>
+      <div className="flex items-center justify-between">
+        <h2 className="font-mono text-xl font-bold">Neue Kreatur erstellen</h2>
+        <Button onClick={randomizeAll} variant="secondary" size="sm" className="gap-2">
+          <Dices size={14} />
+          Alles randomisieren
+        </Button>
+      </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <div className="space-y-2">
-          <Label>Name</Label>
+      {/* 1. Typ */}
+      <div className="space-y-2">
+        <Label>Typ</Label>
+        <Select value={type} onValueChange={(v) => setType(v as CreatureType)}>
+          <SelectTrigger><SelectValue /></SelectTrigger>
+          <SelectContent>
+            {CREATURE_TYPES.map((t) => (
+              <SelectItem key={t} value={t}>{TYPE_LABELS[t]}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+
+      {/* 2. Name */}
+      <div className="space-y-2">
+        <Label>Name</Label>
+        <div className="flex gap-2">
           <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Kreaturname..." />
+          <Button type="button" variant="secondary" size="icon" onClick={randomizeName} title="Namen generieren">
+            <Shuffle size={16} />
+          </Button>
         </div>
-        <div className="space-y-2">
-          <Label>Beschreibung</Label>
+      </div>
+
+      {/* 3. Beschreibung */}
+      <div className="space-y-2">
+        <Label>Beschreibung</Label>
+        <div className="flex gap-2">
           <Input value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Optional..." />
+          <Button type="button" variant="secondary" size="icon" onClick={randomizeDescription} title="Beschreibung generieren">
+            <Shuffle size={16} />
+          </Button>
         </div>
       </div>
 
-      <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-        <div className="space-y-2">
-          <Label>Typ</Label>
-          <Select value={type} onValueChange={(v) => { setType(v as CreatureType); setSelectedSkills([]); }}>
-            <SelectTrigger><SelectValue /></SelectTrigger>
-            <SelectContent>
-              {CREATURE_TYPES.map((t) => <SelectItem key={t} value={t}>{TYPE_LABELS[t]}</SelectItem>)}
-            </SelectContent>
-          </Select>
-        </div>
-        <div className="space-y-2">
-          <Label>Seltenheit</Label>
-          <Select value={rarity} onValueChange={(v) => setRarity(v as CreatureRarity)}>
-            <SelectTrigger><SelectValue /></SelectTrigger>
-            <SelectContent>
-              {CREATURE_RARITIES.map((r) => <SelectItem key={r} value={r}>{RARITY_LABELS[r]}</SelectItem>)}
-            </SelectContent>
-          </Select>
-        </div>
-        <div className="space-y-2">
-          <Label>Form</Label>
-          <Select value={form} onValueChange={(v) => setForm(v as CreatureForm)}>
-            <SelectTrigger><SelectValue /></SelectTrigger>
-            <SelectContent>
-              {CREATURE_FORMS.map((f) => <SelectItem key={f} value={f}>{FORM_LABELS[f]}</SelectItem>)}
-            </SelectContent>
-          </Select>
-        </div>
+      {/* 4. Seltenheit */}
+      <div className="space-y-2">
+        <Label>Seltenheit</Label>
+        <Select value={rarity} onValueChange={(v) => setRarity(v as CreatureRarity)}>
+          <SelectTrigger><SelectValue /></SelectTrigger>
+          <SelectContent>
+            {CREATURE_RARITIES.map((r) => (
+              <SelectItem key={r} value={r}>{RARITY_LABELS[r]}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
 
-      <div className="space-y-4">
-        <h3 className="font-mono text-sm text-muted-foreground">
-          Basiswerte <span className="text-xs">(Primärstat für {TYPE_LABELS[type]}: <strong className="text-primary">{STAT_LABELS[primaryStat]}</strong>)</span>
-        </h3>
-        {stats.map(({ key, label, value, set }) => (
+      {/* 5. Bild URL */}
+      <div className="space-y-2">
+        <Label>Bild URL (optional)</Label>
+        <Input value={imageUrl} onChange={(e) => setImageUrl(e.target.value)} placeholder="https://..." />
+      </div>
+
+      {/* 6. Stats */}
+      <div className="space-y-3">
+        <div className="flex items-center justify-between">
+          <h3 className="font-mono text-sm text-muted-foreground">
+            Stats <span className="text-xs">(Σ = {STAT_TOTAL}, Primär: <strong className="text-primary">{STAT_LABELS[primaryStat]}</strong>)</span>
+          </h3>
+          <Button onClick={randomizeStats} variant="ghost" size="sm" className="gap-2 text-xs">
+            <Dices size={12} />
+            Zufällige Stats
+          </Button>
+        </div>
+
+        {statList.map(({ key, label }) => (
           <div key={key} className="space-y-1">
             <div className="flex justify-between text-sm">
               <span className={key === primaryStat ? "text-primary font-bold" : ""}>
                 {label} {key === primaryStat && "⭐"}
               </span>
-              <span className="font-mono text-primary">{value}</span>
+              <span className="font-mono text-primary">{stats[key]}</span>
             </div>
-            <Slider value={[value]} onValueChange={([v]) => set(v)} min={1} max={100} step={1} />
+            <Slider
+              value={[stats[key]]}
+              onValueChange={([v]) => setStat(key, v)}
+              min={STAT_MIN}
+              max={STAT_MAX}
+              step={1}
+            />
           </div>
         ))}
-      </div>
 
-      <div className="grid grid-cols-2 gap-4">
-        <div className="space-y-2">
-          <Label>Max. aktive Skills</Label>
-          <Select value={String(maxActiveSkills)} onValueChange={(v) => setMaxActiveSkills(Number(v))}>
-            <SelectTrigger><SelectValue /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="3">3 (Standard)</SelectItem>
-              <SelectItem value="4">4 (Spezial)</SelectItem>
-              <SelectItem value="5">5 (Spezial+)</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-        <div className="space-y-2">
-          <Label>Bild-URL</Label>
-          <Input value={imageUrl} onChange={(e) => setImageUrl(e.target.value)} placeholder="https://..." />
-        </div>
-      </div>
-
-      {filteredSkills.length > 0 && (
-        <div className="space-y-2">
-          <Label>Skills zuweisen ({TYPE_LABELS[type]})</Label>
-          <div className="flex flex-wrap gap-2">
-            {filteredSkills.map((skill) => (
-              <button
-                key={skill.id}
-                type="button"
-                onClick={() => toggleSkill(skill.id)}
-                className={`px-3 py-1.5 rounded text-xs font-medium transition-colors ${
-                  selectedSkills.includes(skill.id)
-                    ? "bg-primary text-primary-foreground"
-                    : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
-                }`}
-              >
-                {skill.name} <span className="opacity-60">({skill.kind === "attack" ? "⚔️" : "🛡️"})</span>
-              </button>
-            ))}
+        {/* Leben (HP) */}
+        <div className="bg-muted rounded-lg p-3 flex items-center justify-between mt-4">
+          <div>
+            <div className="text-xs text-muted-foreground font-mono">LEBEN (HP)</div>
+            <div className="text-xs text-muted-foreground">Stärke + Geschwindigkeit + Intelligenz</div>
           </div>
-          {skillValidationError && (
-            <p className="text-destructive text-xs font-medium">{skillValidationError}</p>
-          )}
+          <div className="text-3xl font-bold font-mono text-foreground">{hp}</div>
+        </div>
+      </div>
+
+      {/* Skill assignment hint */}
+      {typeAttackSkills.length === 0 && (
+        <div className="bg-destructive/10 border border-destructive/30 rounded-lg p-3 text-sm text-destructive">
+          ⚠️ Es existiert noch kein Angriffs-Skill für Typ {TYPE_LABELS[type]}. Die Kreatur wird ohne Start-Skills erstellt.
+        </div>
+      )}
+      {typeAttackSkills.length > 0 && (
+        <div className="bg-secondary/40 rounded-lg p-3 text-xs text-muted-foreground font-mono">
+          ℹ️ 2 Start-Skills werden automatisch aus dem {TYPE_LABELS[type]}-Pool zugewiesen (mind. 1 Angriff).
         </div>
       )}
 
       <Button
         onClick={() => createMutation.mutate()}
-        disabled={!name || createMutation.isPending || !!skillValidationError}
+        disabled={!name || createMutation.isPending}
         className="w-full"
+        size="lg"
       >
         {createMutation.isPending ? "Wird erstellt..." : "Kreatur erstellen"}
       </Button>
