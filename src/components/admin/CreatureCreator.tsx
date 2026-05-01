@@ -149,8 +149,17 @@ export default function CreatureCreator() {
         base_intelligence: stats.intelligence,
         max_active_skills: 3,
         max_skill_points: maxSkillPoints,
-        image_url: imageUrl || null,
-      }).select().single();
+        sprite_frame_size: frameSize,
+        sprite_fps: fps,
+        sprite_idle_url: sprites.idle.url || null,
+        sprite_idle_frames: sprites.idle.url ? sprites.idle.frames : null,
+        sprite_attack_url: sprites.attack.url || null,
+        sprite_attack_frames: sprites.attack.url ? sprites.attack.frames : null,
+        sprite_hit_url: sprites.hit.url || null,
+        sprite_hit_frames: sprites.hit.url ? sprites.hit.frames : null,
+        sprite_die_url: sprites.die.url || null,
+        sprite_die_frames: sprites.die.url ? sprites.die.frames : null,
+      } as any).select().single();
       if (error) throw error;
 
       const assignedSkills: { id: string; name: string; kind: string }[] = [];
