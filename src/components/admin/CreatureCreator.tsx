@@ -61,6 +61,7 @@ export default function CreatureCreator() {
     die:    { url: "", frames: 4, fileName: "" },
   });
   const [uploadingSlot, setUploadingSlot] = useState<SlotKey | null>(null);
+  const [dragOverSlot, setDragOverSlot] = useState<SlotKey | null>(null);
 
   const handleSpriteUpload = async (slot: SlotKey, file: File) => {
     try {
@@ -373,8 +374,21 @@ export default function CreatureCreator() {
           const labels = { idle: "Idle", attack: "Angriff", hit: "Schaden", die: "Sterben" };
           const loop = slot === "idle";
           const s = sprites[slot];
+          const isDragging = dragOverSlot === slot;
           return (
-            <div key={slot} className="border border-border/60 rounded-md p-2 space-y-2 bg-secondary/20">
+            <div
+              key={slot}
+              onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); setDragOverSlot(slot); }}
+              onDragEnter={(e) => { e.preventDefault(); e.stopPropagation(); setDragOverSlot(slot); }}
+              onDragLeave={(e) => { e.preventDefault(); e.stopPropagation(); setDragOverSlot((prev) => (prev === slot ? null : prev)); }}
+              onDrop={(e) => {
+                e.preventDefault(); e.stopPropagation();
+                setDragOverSlot(null);
+                const f = e.dataTransfer.files?.[0];
+                if (f && /\.png$/i.test(f.name)) handleSpriteUpload(slot, f);
+              }}
+              className={`border rounded-md p-2 space-y-2 transition-colors ${isDragging ? "border-primary border-2 bg-primary/10" : "border-border/60 bg-secondary/20"}`}
+            >
               <div className="flex items-center justify-between">
                 <span className="font-mono text-sm font-bold">{labels[slot]}</span>
                 <label className="cursor-pointer">
