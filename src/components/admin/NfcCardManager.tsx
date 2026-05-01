@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
@@ -12,8 +13,14 @@ import { RotateCcw, Trash2 } from "lucide-react";
 
 export default function NfcCardManager() {
   const queryClient = useQueryClient();
+  const [searchParams] = useSearchParams();
+  const preselectedId = searchParams.get("creatureId");
   const [uid, setUid] = useState("");
-  const [creatureId, setCreatureId] = useState("");
+  const [creatureId, setCreatureId] = useState(preselectedId || "");
+
+  useEffect(() => {
+    if (preselectedId) setCreatureId(preselectedId);
+  }, [preselectedId]);
 
   const { data: creatures } = useQuery({
     queryKey: ["creatures"],
