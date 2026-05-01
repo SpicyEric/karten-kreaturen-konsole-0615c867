@@ -94,6 +94,35 @@ export default function NfcCardManager() {
     onError: (e) => toast.error("Fehler: " + e.message),
   });
 
+  const selectedCreature = creatures?.find((c) => c.id === creatureId);
+  const [scanning, setScanning] = useState(false);
+
+  const startNfcScan = async () => {
+    if (!("NDEFReader" in window)) {
+      toast.error("Web NFC wird auf diesem Gerät/Browser nicht unterstützt. Nutze Chrome auf Android.");
+      return;
+    }
+    try {
+      setScanning(true);
+      const ndef = new (window as any).NDEFReader();
+      await ndef.scan();
+      toast.info("Halte eine NFC-Karte an dein Gerät...");
+      ndef.addEventListener("reading", ({ serialNumber }: any) => {
+        const scanned = String(serialNumber).toUpperCase();
+        setUid(scanned);
+        setScanning(false);
+        toast.success("UID gelesen: " + scanned);
+      });
+      ndef.addEventListener("readingerror", () => {
+        setScanning(false);
+        toast.error("Fehler beim Lesen der NFC-Karte.");
+      });
+    } catch (e: any) {
+      setScanning(false);
+      toast.error("NFC Scan fehlgeschlagen: " + e.message);
+    }
+  };
+
   return (
     <div className="space-y-6">
       <h2 className="font-mono text-xl font-bold">NFC Karte registrieren</h2>
@@ -101,12 +130,24 @@ export default function NfcCardManager() {
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div className="space-y-2">
           <Label>NFC UID</Label>
-          <Input
-            value={uid}
-            onChange={(e) => setUid(e.target.value)}
-            placeholder="z.B. 04:A3:B2:C1:D4:E5:F6"
-            className="font-mono"
-          />
+          <div className="flex gap-2">
+            <Input
+              value={uid}
+              onChange={(e) => setUid(e.target.value)}
+              placeholder="z.B. 04:A3:B2:C1:D4:E5:F6"
+              className="font-mono"
+            />
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={startNfcScan}
+              disabled={scanning}
+              title="NFC-Karte scannen"
+            >
+              <Nfc size={16} className="mr-1" />
+              {scanning ? "Scanne..." : "Scan"}
+            </Button>
+          </div>
         </div>
         <div className="space-y-2">
           <Label>Kreatur zuweisen</Label>
@@ -121,6 +162,40 @@ export default function NfcCardManager() {
         </div>
       </div>
 
+      {selectedCreature && (
+        <div className="bg-card border border-border rounded-lg p-4 flex items-center gap-4">
+          <div className="bg-muted rounded-lg p-2 flex-shrink-0">
+            {selectedCreature.sprite_idle_url && selectedCreature.sprite_idle_frames ? (
+              <SpriteAnimator
+                src={selectedCreature.sprite_idle_url}
+                frameCount={selectedCreature.sprite_idle_frames}
+                frameSize={selectedCreature.sprite_frame_size ?? 64}
+                fps={selectedCreature.sprite_fps ?? 8}
+                loop
+                scale={2}
+              />
+            ) : (
+              <div
+                style={{ width: 128, height: 128 }}
+                className="bg-secondary rounded text-xs text-muted-foreground flex items-center justify-center font-mono"
+              >
+                kein Sprite
+              </div>
+            )}
+          </div>
+          <div className="space-y-2">
+            <div className="font-mono text-lg font-bold">{selectedCreature.name}</div>
+            <div className="flex flex-wrap gap-2">
+              <TypeBadge type={selectedCreature.type} />
+              <RarityBadge rarity={selectedCreature.rarity} />
+            </div>
+            {selectedCreature.description && (
+              <p className="text-xs text-muted-foreground max-w-md">{selectedCreature.description}</p>
+            )}
+          </div>
+        </div>
+      )}
+
       <Button
         onClick={() => registerMutation.mutate()}
         disabled={!uid.trim() || !creatureId || registerMutation.isPending}
@@ -128,6 +203,7 @@ export default function NfcCardManager() {
       >
         {registerMutation.isPending ? "Wird registriert..." : "Karte registrieren"}
       </Button>
+
 
       <div className="space-y-2">
         <h3 className="font-mono text-lg font-bold">Registrierte Karten ({cards?.length || 0})</h3>
