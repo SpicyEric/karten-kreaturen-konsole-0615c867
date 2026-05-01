@@ -189,6 +189,8 @@ export default function NfcTestPage() {
               {creature.description && <p className="text-sm text-muted-foreground">{creature.description}</p>}
             </div>
 
+            <CreatureSpritePreview creature={creature} scale={2} />
+
             <div className="flex flex-wrap gap-2">
               <TypeBadge type={creature.type} />
               <RarityBadge rarity={creature.rarity} />
