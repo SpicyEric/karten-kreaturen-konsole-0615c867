@@ -66,8 +66,16 @@ export default function CreatureCreator() {
   const maxHp = total + maxSkillPoints;
   const totalInRange = total >= range.min && total <= range.max;
 
-  const typeSkills = skills?.filter(s => s.type === type) || [];
-  const typeAttackSkills = typeSkills.filter(s => s.kind === "attack");
+  // Allowed tiers for starting skills based on creature rarity
+  const ALLOWED_TIERS_BY_RARITY: Record<string, string[]> = {
+    gewoehnlich: ["standard"],
+    selten: ["standard", "selten"],
+    episch: ["standard", "selten", "super"],
+    legendaer: ["standard", "selten", "super", "episch"],
+  };
+  const allowedTiers = ALLOWED_TIERS_BY_RARITY[rarity] || ["standard"];
+  const typeSkills = (skills || []).filter((s: any) => s.type === type && allowedTiers.includes(s.tier));
+  const typeAttackSkills = typeSkills.filter((s: any) => s.kind === "attack");
 
   // Free sliders, but warn if outside the rarity range.
   const setStat = (key: StatKey, newValue: number) => {
@@ -358,7 +366,7 @@ export default function CreatureCreator() {
       )}
       {typeAttackSkills.length > 0 && (
         <div className="bg-secondary/40 rounded-lg p-3 text-xs text-muted-foreground font-mono">
-          ℹ️ 2 Start-Skills werden automatisch aus dem {TYPE_LABELS[type]}-Pool zugewiesen (mind. 1 Angriff).
+          ℹ️ 2 Start-Skills werden automatisch aus dem {TYPE_LABELS[type]}-Pool zugewiesen (mind. 1 Angriff). Erlaubte Stufen für {RARITY_LABELS[rarity]}: {allowedTiers.join(", ")}.
         </div>
       )}
 
