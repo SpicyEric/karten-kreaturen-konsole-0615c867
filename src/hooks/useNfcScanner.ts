@@ -11,19 +11,21 @@ export function useNfcScanner(onUid: (uid: string) => void) {
   const [scanning, setScanning] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const abortRef = useRef<AbortController | null>(null);
-  const nativeListenerRef = useRef<{ remove: () => void } | null>(null);
+  
+
+  const unsubscribeRef = useRef<(() => void) | null>(null);
 
   const stop = useCallback(async () => {
     abortRef.current?.abort();
     abortRef.current = null;
-    if (nativeListenerRef.current) {
-      try { nativeListenerRef.current.remove(); } catch {}
-      nativeListenerRef.current = null;
+    if (unsubscribeRef.current) {
+      try { unsubscribeRef.current(); } catch {}
+      unsubscribeRef.current = null;
     }
     if (Capacitor.isNativePlatform()) {
       try {
         const mod: any = await import("@exxili/capacitor-nfc");
-        await mod.NFC?.stopScan?.();
+        await mod.NFC?.cancelScan?.();
       } catch {}
     }
     setScanning(false);
@@ -38,22 +40,36 @@ export function useNfcScanner(onUid: (uid: string) => void) {
       try {
         const mod: any = await import("@exxili/capacitor-nfc");
         const NFC = mod.NFC;
-        if (!NFC) throw new Error("NFC Plugin nicht verfügbar");
-        const listener = await NFC.addListener("nfcTag", (event: any) => {
-          const raw =
-            event?.id ||
-            event?.uid ||
-            event?.serialNumber ||
-            event?.tag?.id ||
-            "";
-          const uid = String(raw).replace(/[:\s]/g, "").toUpperCase();
+        if (!NFC || typeof NFC.onRead !== "function") {
+          throw new Error("NFC Plugin nicht verfügbar");
+        }
+
+        // onRead returns an unsubscribe function (NOT a { remove } handle)
+        const unsubscribe = NFC.onRead((data: any) => {
+          let uid = "";
+          try {
+            // data is NDEFMessagesTransformable – tagInfo.uid is the hex UID
+            const messages = typeof data?.string === "function" ? data.string() : data;
+            uid = messages?.tagInfo?.uid || "";
+          } catch {
+            uid = data?.tagInfo?.uid || "";
+          }
+          uid = String(uid).replace(/[:\s]/g, "").toUpperCase();
           if (uid) {
             onUid(uid);
             stop();
           }
         });
-        nativeListenerRef.current = listener;
-        await NFC.startScan?.();
+        unsubscribeRef.current = unsubscribe;
+
+        // Optional error listener
+        if (typeof NFC.onError === "function") {
+          NFC.onError((err: any) => {
+            setError("NFC Fehler: " + (err?.error ?? String(err)));
+          });
+        }
+
+        await NFC.startScan();
         return;
       } catch (e: any) {
         setScanning(false);
