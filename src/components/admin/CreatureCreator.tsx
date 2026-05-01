@@ -207,7 +207,12 @@ export default function CreatureCreator() {
     setCreatedCreature(null);
     setName("");
     setDescription("");
-    setImageUrl("");
+    setSprites({
+      idle:   { url: "", frames: 4, fileName: "" },
+      attack: { url: "", frames: 4, fileName: "" },
+      hit:    { url: "", frames: 4, fileName: "" },
+      die:    { url: "", frames: 4, fileName: "" },
+    });
     randomizeStats();
   };
 
