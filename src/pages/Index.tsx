@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { Sword, Nfc } from "lucide-react";
+import { Sword, Nfc, Smartphone } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 const Index = () => {
@@ -16,6 +16,12 @@ const Index = () => {
             <Button className="w-full gap-2" size="lg">
               <Sword size={18} />
               Admin Dashboard
+            </Button>
+          </Link>
+          <Link to="/app" className="block">
+            <Button variant="default" className="w-full gap-2" size="lg">
+              <Smartphone size={18} />
+              Spieler App öffnen
             </Button>
           </Link>
           <Link to="/nfc-test" className="block">
