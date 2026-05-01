@@ -61,6 +61,7 @@ export default function CreatureCreator() {
     die:    { url: "", frames: 4, fileName: "" },
   });
   const [uploadingSlot, setUploadingSlot] = useState<SlotKey | null>(null);
+  const [dragOverSlot, setDragOverSlot] = useState<SlotKey | null>(null);
 
   const handleSpriteUpload = async (slot: SlotKey, file: File) => {
     try {
