@@ -7,6 +7,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { toast } from "sonner";
 import TypeBadge from "./TypeBadge";
 import RarityBadge from "./RarityBadge";
+import CreatureSpritePreview from "@/components/CreatureSpritePreview";
 import { KIND_ICONS, RARITY_MAX_SKILL_POINTS } from "@/lib/constants";
 import { Trash2, CreditCard } from "lucide-react";
 
