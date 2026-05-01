@@ -61,6 +61,21 @@ export const TYPE_PRIMARY_STAT: Record<string, string> = {
   wasser: 'intelligence', eis: 'intelligence', gift: 'intelligence',
 };
 
-export const STAT_TOTAL = 30;
 export const STAT_MIN = 3;
 export const STAT_MAX = 20;
+
+// Rarity-based starting stat point ranges (sum of 3 base stats)
+export const RARITY_STAT_RANGE: Record<string, { min: number; max: number }> = {
+  gewoehnlich: { min: 15, max: 20 },
+  selten:      { min: 20, max: 25 },
+  episch:      { min: 25, max: 30 },
+  legendaer:   { min: 30, max: 35 },
+};
+
+// Rarity-based max additional skill points (gained through training)
+export const RARITY_MAX_SKILL_POINTS: Record<string, number> = {
+  gewoehnlich: 15,
+  selten:      20,
+  episch:      25,
+  legendaer:   30,
+};
