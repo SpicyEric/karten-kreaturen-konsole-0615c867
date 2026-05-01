@@ -69,7 +69,11 @@ export function useNfcScanner(onUid: (uid: string) => void) {
           });
         }
 
-        await NFC.startScan();
+        // Android: kein startScan nötig – onRead lauscht automatisch.
+        // iOS: startScan() ist erforderlich, um Session zu öffnen.
+        if (Capacitor.getPlatform() === "ios" && typeof NFC.startScan === "function") {
+          try { await NFC.startScan(); } catch {}
+        }
         return;
       } catch (e: any) {
         setScanning(false);
