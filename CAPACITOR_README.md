@@ -1,63 +1,80 @@
-# NFC Kreaturen – Dev Tool
+# NFC Kreaturen – Dev Tool & Spieler App
 
 Physisch-digitales Kreaturensammelspiel mit NFC-Karten.
 
-## Lokale Entwicklung
+## Routen
+
+- `/` – Landing (Auswahl)
+- `/admin` – Admin Tool (Kreaturen, Skills, Karten registrieren)
+- `/app` – Spieler App (mobile-first, Capacitor-ready)
+- `/nfc-test` – NFC UID Test
+
+## Lokale Web-Entwicklung
 
 ```bash
 npm install
 npm run dev
 ```
 
-## Capacitor – Native App Build
+## Native App auf Android (Capacitor)
 
 ### Voraussetzungen
 - Node.js 18+
-- Für iOS: Mac mit Xcode 15+
-- Für Android: Android Studio mit SDK 33+
+- Android Studio + Android SDK 33+
+- Physisches Android-Gerät mit NFC (oder Emulator – NFC dann nur via Code-Injection)
 
-### Setup
+### Erst-Setup nach GitHub-Clone
 
 ```bash
-# 1. Projekt von GitHub klonen und Dependencies installieren
+# 1. Repo klonen (über "Export to GitHub" in Lovable)
 git clone <dein-repo>
-cd nfc-kreaturen
+cd <dein-repo>
 npm install
 
-# 2. Capacitor Dependencies installieren
-npm install @capacitor/core @capacitor/cli @capacitor/ios @capacitor/android
-
-# 3. Plattformen hinzufügen
-npx cap add ios
+# 2. Native Android-Plattform hinzufügen
 npx cap add android
 
-# 4. Web-App bauen
+# 3. Build + Sync
 npm run build
+npx cap sync android
 
-# 5. Sync
-npx cap sync
-
-# 6. Native App starten
-npx cap run android   # oder: npx cap run ios
+# 4. In Android Studio öffnen
+npx cap open android
 ```
 
-### Hot-Reload für Entwicklung
+### NFC-Permissions (Android)
 
-In `capacitor.config.ts` den `server`-Block einkommentieren und die Preview-URL einsetzen.
+Nach `npx cap add android` einmalig in
+`android/app/src/main/AndroidManifest.xml` im `<manifest>`-Block einfügen:
 
-### NFC auf nativen Plattformen
+```xml
+<uses-permission android:name="android.permission.NFC" />
+<uses-feature android:name="android.hardware.nfc" android:required="true" />
+```
 
-**Android:** Web NFC API funktioniert in der WebView. Alternativ kann ein Capacitor NFC Plugin verwendet werden.
+Dann erneut `npx cap sync android` ausführen.
 
-**iOS:** Web NFC wird NICHT unterstützt. Für iOS muss ein natives Capacitor NFC Plugin verwendet werden:
-- [@niceplugins/capacitor-nfc](https://github.com/niceplugins/capacitor-nfc)
-- Erfordert ein Apple Developer Account mit NFC-Entitlement
+### Hot-Reload (Live vom Lovable-Sandbox)
 
-### Datenbank
+`capacitor.config.ts` zeigt bereits auf die Lovable Preview-URL.
+Solange die App im `server.url` geladen wird, siehst du Code-Änderungen live
+auf dem Gerät, sobald in Lovable gespeichert wird.
 
-Die App verwendet Lovable Cloud als Backend (PostgreSQL). Alle Tabellen:
-- `creatures` – Kreatur-Blueprints
-- `skills` – Globaler Skill-Pool
-- `creature_skills` – Kreatur ↔ Skill Zuweisungen
-- `nfc_cards` – Registrierte NFC-Karten
-- `card_instances` – Lebende Kreatur-Instanzen auf Karten
+Für eine Offline/Production-Build den `server`-Block entfernen, dann:
+```bash
+npm run build && npx cap sync android
+```
+
+### Nach jedem `git pull`
+
+```bash
+npm install
+npm run build
+npx cap sync android
+```
+
+## Datenbank (Lovable Cloud / Supabase)
+
+Tabellen: `creatures`, `skills`, `skill_folders`, `creature_skills`,
+`nfc_cards`, `card_instances`.
+Sprites werden im Storage-Bucket `sprites` abgelegt.

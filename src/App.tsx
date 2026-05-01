@@ -9,6 +9,9 @@ import AdminSkills from "./pages/AdminSkills";
 import AdminCards from "./pages/AdminCards";
 import AdminListPage from "./pages/AdminListPage";
 import NfcTestPage from "./pages/NfcTestPage";
+import AppTraining from "./pages/AppTraining";
+import AppProfil from "./pages/AppProfil";
+import AppKampf from "./pages/AppKampf";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -26,6 +29,9 @@ const App = () => (
           <Route path="/admin/cards" element={<AdminCards />} />
           <Route path="/admin/list" element={<AdminListPage />} />
           <Route path="/nfc-test" element={<NfcTestPage />} />
+          <Route path="/app" element={<AppTraining />} />
+          <Route path="/app/profil" element={<AppProfil />} />
+          <Route path="/app/kampf" element={<AppKampf />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
