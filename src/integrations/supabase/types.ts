@@ -187,38 +187,88 @@ export type Database = {
           },
         ]
       }
-      skills: {
+      skill_folders: {
         Row: {
           created_at: string
-          description: string | null
           id: string
+          name: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+        }
+        Relationships: []
+      }
+      skills: {
+        Row: {
+          applies_stun: boolean
+          applies_weakness: boolean
+          area_damage_value: number | null
+          cooldown_turns: number
+          created_at: string
+          description: string | null
+          folder_id: string | null
+          heal_value: number | null
+          id: string
+          is_area_damage: boolean
           kind: string
           name: string
-          stat_affected: string
+          stat_affected: string | null
+          support_type: string | null
           tier: Database["public"]["Enums"]["skill_tier"]
           type: string
         }
         Insert: {
+          applies_stun?: boolean
+          applies_weakness?: boolean
+          area_damage_value?: number | null
+          cooldown_turns?: number
           created_at?: string
           description?: string | null
+          folder_id?: string | null
+          heal_value?: number | null
           id?: string
+          is_area_damage?: boolean
           kind?: string
           name: string
-          stat_affected?: string
+          stat_affected?: string | null
+          support_type?: string | null
           tier?: Database["public"]["Enums"]["skill_tier"]
           type: string
         }
         Update: {
+          applies_stun?: boolean
+          applies_weakness?: boolean
+          area_damage_value?: number | null
+          cooldown_turns?: number
           created_at?: string
           description?: string | null
+          folder_id?: string | null
+          heal_value?: number | null
           id?: string
+          is_area_damage?: boolean
           kind?: string
           name?: string
-          stat_affected?: string
+          stat_affected?: string | null
+          support_type?: string | null
           tier?: Database["public"]["Enums"]["skill_tier"]
           type?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "skills_folder_id_fkey"
+            columns: ["folder_id"]
+            isOneToOne: false
+            referencedRelation: "skill_folders"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
