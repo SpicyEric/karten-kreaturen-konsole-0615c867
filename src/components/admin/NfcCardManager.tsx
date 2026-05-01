@@ -9,7 +9,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { toast } from "sonner";
 import TypeBadge from "./TypeBadge";
 import RarityBadge from "./RarityBadge";
-import { RotateCcw, Trash2 } from "lucide-react";
+import SpriteAnimator from "@/components/SpriteAnimator";
+import { RotateCcw, Trash2, Nfc } from "lucide-react";
 
 export default function NfcCardManager() {
   const queryClient = useQueryClient();
