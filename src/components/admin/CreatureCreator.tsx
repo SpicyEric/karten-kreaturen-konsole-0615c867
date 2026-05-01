@@ -18,7 +18,8 @@ import {
 import { generateCreatureName, generateDescription, generateStats } from "@/lib/creature-generators";
 import TypeBadge from "./TypeBadge";
 import RarityBadge from "./RarityBadge";
-import { Shuffle, Dices, CreditCard, Plus } from "lucide-react";
+import SpriteAnimator from "@/components/SpriteAnimator";
+import { Shuffle, Dices, CreditCard, Plus, Upload } from "lucide-react";
 import type { Database } from "@/integrations/supabase/types";
 
 type CreatureType = Database["public"]["Enums"]["creature_type"];
