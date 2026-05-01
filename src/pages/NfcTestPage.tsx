@@ -200,6 +200,27 @@ export default function NfcTestPage() {
               ))}
             </div>
 
+            {(() => {
+              const baseTotal = creature.base_strength + creature.base_speed + creature.base_intelligence;
+              const maxSp = creature.max_skill_points ?? RARITY_MAX_SKILL_POINTS[creature.rarity] ?? 0;
+              const currentSp = creature.card_instance?.current_skill_points ?? 0;
+              const currentHp = baseTotal + currentSp;
+              const maxHp = baseTotal + maxSp;
+              return (
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="bg-muted rounded p-2 text-center">
+                    <div className="text-xs text-muted-foreground font-mono">LEBEN</div>
+                    <div className="text-xl font-bold font-mono text-foreground">{currentHp} / {maxHp}</div>
+                    <div className="text-[10px] text-muted-foreground">SP {currentSp} / {maxSp}</div>
+                  </div>
+                  <div className="bg-muted rounded p-2 text-center">
+                    <div className="text-xs text-muted-foreground font-mono">BASIS LEBEN</div>
+                    <div className="text-xl font-bold font-mono text-primary">{baseTotal}</div>
+                  </div>
+                </div>
+              );
+            })()}
+
             {creature.card_instance && (
               <div className="border-t border-border pt-3 space-y-2">
                 <h3 className="font-mono text-sm font-bold text-muted-foreground">Karten-Instanz</h3>
