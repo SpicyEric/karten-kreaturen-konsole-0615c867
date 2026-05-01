@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Link } from "react-router-dom";
 import TypeBadge from "@/components/admin/TypeBadge";
 import RarityBadge from "@/components/admin/RarityBadge";
-import { FORM_LABELS } from "@/lib/constants";
+import { FORM_LABELS, RARITY_MAX_SKILL_POINTS } from "@/lib/constants";
 import { Nfc, ArrowLeft } from "lucide-react";
 
 interface CreatureData {
@@ -19,9 +19,11 @@ interface CreatureData {
   base_speed: number;
   base_intelligence: number;
   max_active_skills: number;
+  max_skill_points: number;
   image_url: string | null;
   card_instance?: {
     skill_points: number;
+    current_skill_points: number;
     battles_fought: number;
     training_sessions: number;
     unlocked_skills: string[] | null;
