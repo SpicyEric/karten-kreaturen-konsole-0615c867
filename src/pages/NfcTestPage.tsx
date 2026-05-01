@@ -102,8 +102,7 @@ export default function NfcTestPage() {
       await ndef.scan();
 
       ndef.addEventListener("reading", ({ serialNumber }: any) => {
-        const uid = serialNumber.replace(/:/g, ":").toUpperCase();
-        lookupCard(uid);
+        lookupCard(serialNumber || "");
       });
 
       ndef.addEventListener("readingerror", () => {
