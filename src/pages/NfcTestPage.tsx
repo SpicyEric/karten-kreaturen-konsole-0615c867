@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
+import { normalizeNfcUid } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Link } from "react-router-dom";
@@ -49,7 +50,7 @@ export default function NfcTestPage() {
   const [errorMsg, setErrorMsg] = useState("");
 
   const lookupCard = async (uid: string) => {
-    const normalizedUid = uid.trim().toUpperCase();
+    const normalizedUid = normalizeNfcUid(uid);
     setScannedUid(normalizedUid);
     setStatus("scanning");
 
@@ -101,8 +102,7 @@ export default function NfcTestPage() {
       await ndef.scan();
 
       ndef.addEventListener("reading", ({ serialNumber }: any) => {
-        const uid = serialNumber.replace(/:/g, ":").toUpperCase();
-        lookupCard(uid);
+        lookupCard(serialNumber || "");
       });
 
       ndef.addEventListener("readingerror", () => {

@@ -1,5 +1,6 @@
 import { useCallback, useRef, useState } from "react";
 import { Capacitor } from "@capacitor/core";
+import { normalizeNfcUid } from "@/lib/utils";
 
 /**
  * NFC Scanner Hook – funktioniert sowohl auf nativem Android (Capacitor + @exxili/capacitor-nfc)
@@ -48,13 +49,12 @@ export function useNfcScanner(onUid: (uid: string) => void) {
         const unsubscribe = NFC.onRead((data: any) => {
           let uid = "";
           try {
-            // data is NDEFMessagesTransformable – tagInfo.uid is the hex UID
             const messages = typeof data?.string === "function" ? data.string() : data;
             uid = messages?.tagInfo?.uid || "";
           } catch {
             uid = data?.tagInfo?.uid || "";
           }
-          uid = String(uid).replace(/[:\s]/g, "").toUpperCase();
+          uid = normalizeNfcUid(uid);
           if (uid) {
             onUid(uid);
             stop();
@@ -98,7 +98,7 @@ export function useNfcScanner(onUid: (uid: string) => void) {
         "reading",
         (event: any) => {
           if (typeof event.preventDefault === "function") event.preventDefault();
-          const uid = String(event.serialNumber || "").replace(/[:\s]/g, "").toUpperCase();
+          const uid = normalizeNfcUid(event.serialNumber || "");
           if (!uid) return;
           onUid(uid);
           controller.abort();
