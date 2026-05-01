@@ -205,12 +205,11 @@ export default function NfcCardManager() {
             <Button
               type="button"
               variant="secondary"
-              onClick={startNfcScan}
-              disabled={scanning}
-              title="NFC-Karte scannen"
+              onClick={scanning ? cancelNfcScan : startNfcScan}
+              title={scanning ? "Scan abbrechen" : "NFC-Karte scannen"}
             >
               <Nfc size={16} className="mr-1" />
-              {scanning ? "Scanne..." : "Scan"}
+              {scanning ? "Abbrechen" : "Scan"}
             </Button>
           </div>
         </div>
