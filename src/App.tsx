@@ -26,7 +26,7 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <Routes>
-          <Route path="/" element={<Index />} />
+          <Route path="/" element={isNative ? <Navigate to="/app" replace /> : <Index />} />
           <Route path="/admin" element={<AdminCreatures />} />
           <Route path="/admin/skills" element={<AdminSkills />} />
           <Route path="/admin/cards" element={<AdminCards />} />
