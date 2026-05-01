@@ -14,6 +14,13 @@ export const STAT_OPTIONS = ['strength', 'speed', 'intelligence'] as const;
 
 export const SKILL_KINDS = ['attack', 'defence', 'support'] as const;
 
+export const SUPPORT_TYPES = ['single_heal', 'team_heal', 'shield'] as const;
+export const SUPPORT_TYPE_LABELS: Record<string, string> = {
+  single_heal: 'Einzelheilung',
+  team_heal: 'Teamheilung',
+  shield: 'Schutzschild',
+};
+
 export const TYPE_LABELS: Record<string, string> = {
   feuer: 'Feuer 🔥', wasser: 'Wasser 💧', stein: 'Stein 🪨', luft: 'Luft 💨',
   blitz: 'Blitz ⚡', eis: 'Eis ❄️', gift: 'Gift ☠️', licht: 'Licht ✨', schatten: 'Schatten 🌑'
