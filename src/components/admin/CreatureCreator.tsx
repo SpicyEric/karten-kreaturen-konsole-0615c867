@@ -46,7 +46,7 @@ export default function CreatureCreator() {
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [rarity, setRarity] = useState<CreatureRarity>("gewoehnlich");
-  const [imageUrl, setImageUrl] = useState("");
+  
   const [stats, setStats] = useState<Record<StatKey, number>>({ strength: 6, speed: 6, intelligence: 6 });
   const [createdCreature, setCreatedCreature] = useState<CreatedCreature | null>(null);
 
