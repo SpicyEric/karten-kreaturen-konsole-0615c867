@@ -10,7 +10,9 @@ import AdminSkills from "./pages/AdminSkills";
 import AdminCards from "./pages/AdminCards";
 import AdminListPage from "./pages/AdminListPage";
 import NfcTestPage from "./pages/NfcTestPage";
+import AppMenu from "./pages/AppMenu";
 import AppTraining from "./pages/AppTraining";
+import AppAnalyse from "./pages/AppAnalyse";
 import AppProfil from "./pages/AppProfil";
 import AppKampf from "./pages/AppKampf";
 import NotFound from "./pages/NotFound";
@@ -32,7 +34,9 @@ const App = () => (
           <Route path="/admin/cards" element={<AdminCards />} />
           <Route path="/admin/list" element={<AdminListPage />} />
           <Route path="/nfc-test" element={<NfcTestPage />} />
-          <Route path="/app" element={<AppTraining />} />
+          <Route path="/app" element={<AppMenu />} />
+          <Route path="/app/training" element={<AppTraining />} />
+          <Route path="/app/analyse" element={<AppAnalyse />} />
           <Route path="/app/profil" element={<AppProfil />} />
           <Route path="/app/kampf" element={<AppKampf />} />
           <Route path="*" element={<NotFound />} />
