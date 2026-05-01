@@ -354,7 +354,7 @@ export default function CreatureCreator() {
 
       {/* 5. Animationen */}
       <div className="space-y-3 border border-border rounded-lg p-3">
-        <Label className="text-base">Animationen (Sprite-Sheets)</Label>
+        <Label className="text-base">Animationen</Label>
 
         <div className="grid grid-cols-2 gap-2">
           <div className="space-y-1">
@@ -380,7 +380,7 @@ export default function CreatureCreator() {
                 <label className="cursor-pointer">
                   <input
                     type="file"
-                    accept="image/png"
+                    accept=".png"
                     className="hidden"
                     onChange={(e) => {
                       const f = e.target.files?.[0];
