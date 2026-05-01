@@ -12,7 +12,7 @@ export const SKILL_TIERS = ['standard', 'selten', 'super', 'episch'] as const;
 
 export const STAT_OPTIONS = ['strength', 'speed', 'magic'] as const;
 
-export const SKILL_KINDS = ['attack', 'defence'] as const;
+export const SKILL_KINDS = ['attack', 'defence', 'support'] as const;
 
 export const TYPE_LABELS: Record<string, string> = {
   feuer: 'Feuer 🔥', wasser: 'Wasser 💧', stein: 'Stein 🪨', luft: 'Luft 💨',
@@ -31,24 +31,36 @@ export const TIER_LABELS: Record<string, string> = {
   standard: 'Standard', selten: 'Selten', super: 'Super', episch: 'Episch'
 };
 
+export const STAT_OPTIONS_NEW = ['strength', 'speed', 'intelligence'] as const;
+
 export const STAT_LABELS: Record<string, string> = {
-  strength: 'Stärke', speed: 'Geschwindigkeit', magic: 'Magie'
+  strength: 'Stärke', speed: 'Geschwindigkeit', intelligence: 'Intelligenz',
+  // backward-compat alias
+  magic: 'Intelligenz',
 };
 
 export const KIND_LABELS: Record<string, string> = {
-  attack: 'Angriff', defence: 'Verteidigung'
+  attack: 'Angriff', defence: 'Verteidigung', support: 'Support'
+};
+
+export const KIND_ICONS: Record<string, string> = {
+  attack: '⚔️', defence: '🛡️', support: '✨'
 };
 
 // Stat-to-Type mapping: which stat is primary for which types
 export const STAT_TYPE_MAPPING: Record<string, string[]> = {
   strength: ['feuer', 'stein', 'schatten'],
   speed: ['blitz', 'luft', 'licht'],
-  magic: ['wasser', 'eis', 'gift'],
+  intelligence: ['wasser', 'eis', 'gift'],
 };
 
 // Reverse mapping: type to primary stat
 export const TYPE_PRIMARY_STAT: Record<string, string> = {
   feuer: 'strength', stein: 'strength', schatten: 'strength',
   blitz: 'speed', luft: 'speed', licht: 'speed',
-  wasser: 'magic', eis: 'magic', gift: 'magic',
+  wasser: 'intelligence', eis: 'intelligence', gift: 'intelligence',
 };
+
+export const STAT_TOTAL = 30;
+export const STAT_MIN = 3;
+export const STAT_MAX = 20;
