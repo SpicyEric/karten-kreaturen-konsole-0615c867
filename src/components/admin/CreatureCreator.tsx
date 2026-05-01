@@ -50,6 +50,39 @@ export default function CreatureCreator() {
   const [stats, setStats] = useState<Record<StatKey, number>>({ strength: 6, speed: 6, intelligence: 6 });
   const [createdCreature, setCreatedCreature] = useState<CreatedCreature | null>(null);
 
+  // Sprite animations
+  const [frameSize, setFrameSize] = useState(64);
+  const [fps, setFps] = useState(8);
+  type SlotKey = "idle" | "attack" | "hit" | "die";
+  const [sprites, setSprites] = useState<Record<SlotKey, { url: string; frames: number; fileName: string }>>({
+    idle:   { url: "", frames: 4, fileName: "" },
+    attack: { url: "", frames: 4, fileName: "" },
+    hit:    { url: "", frames: 4, fileName: "" },
+    die:    { url: "", frames: 4, fileName: "" },
+  });
+  const [uploadingSlot, setUploadingSlot] = useState<SlotKey | null>(null);
+
+  const handleSpriteUpload = async (slot: SlotKey, file: File) => {
+    try {
+      setUploadingSlot(slot);
+      const ext = file.name.split(".").pop() || "png";
+      const path = `${slot}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+      const { error: upErr } = await supabase.storage.from("sprites").upload(path, file, {
+        cacheControl: "3600",
+        upsert: false,
+        contentType: file.type || "image/png",
+      });
+      if (upErr) throw upErr;
+      const { data: pub } = supabase.storage.from("sprites").getPublicUrl(path);
+      setSprites(prev => ({ ...prev, [slot]: { ...prev[slot], url: pub.publicUrl, fileName: file.name } }));
+      toast.success(`${slot} hochgeladen`);
+    } catch (e: any) {
+      toast.error("Upload fehlgeschlagen: " + e.message);
+    } finally {
+      setUploadingSlot(null);
+    }
+  };
+
   const { data: skills } = useQuery({
     queryKey: ["skills"],
     queryFn: async () => {
