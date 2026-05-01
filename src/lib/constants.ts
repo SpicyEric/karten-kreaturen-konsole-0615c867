@@ -10,7 +10,7 @@ export const CREATURE_FORMS = ['standard', 'spezial'] as const;
 
 export const SKILL_TIERS = ['standard', 'selten', 'super', 'episch'] as const;
 
-export const STAT_OPTIONS = ['strength', 'speed', 'magic'] as const;
+export const STAT_OPTIONS = ['strength', 'speed', 'intelligence'] as const;
 
 export const SKILL_KINDS = ['attack', 'defence', 'support'] as const;
 
