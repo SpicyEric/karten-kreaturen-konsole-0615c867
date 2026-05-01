@@ -49,13 +49,12 @@ export function useNfcScanner(onUid: (uid: string) => void) {
         const unsubscribe = NFC.onRead((data: any) => {
           let uid = "";
           try {
-            // data is NDEFMessagesTransformable – tagInfo.uid is the hex UID
             const messages = typeof data?.string === "function" ? data.string() : data;
             uid = messages?.tagInfo?.uid || "";
           } catch {
             uid = data?.tagInfo?.uid || "";
           }
-          uid = String(uid).replace(/[:\s]/g, "").toUpperCase();
+          uid = normalizeNfcUid(uid);
           if (uid) {
             onUid(uid);
             stop();
