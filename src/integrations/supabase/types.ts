@@ -20,6 +20,7 @@ export type Database = {
           battles_fought: number
           created_at: string
           creature_id: string
+          current_skill_points: number
           id: string
           last_trained_at: string | null
           nfc_card_id: string
@@ -32,6 +33,7 @@ export type Database = {
           battles_fought?: number
           created_at?: string
           creature_id: string
+          current_skill_points?: number
           id?: string
           last_trained_at?: string | null
           nfc_card_id: string
@@ -44,6 +46,7 @@ export type Database = {
           battles_fought?: number
           created_at?: string
           creature_id?: string
+          current_skill_points?: number
           id?: string
           last_trained_at?: string | null
           nfc_card_id?: string
@@ -115,6 +118,7 @@ export type Database = {
           id: string
           image_url: string | null
           max_active_skills: number
+          max_skill_points: number
           name: string
           rarity: Database["public"]["Enums"]["creature_rarity"]
           type: Database["public"]["Enums"]["creature_type"]
@@ -129,6 +133,7 @@ export type Database = {
           id?: string
           image_url?: string | null
           max_active_skills?: number
+          max_skill_points?: number
           name: string
           rarity?: Database["public"]["Enums"]["creature_rarity"]
           type: Database["public"]["Enums"]["creature_type"]
@@ -143,6 +148,7 @@ export type Database = {
           id?: string
           image_url?: string | null
           max_active_skills?: number
+          max_skill_points?: number
           name?: string
           rarity?: Database["public"]["Enums"]["creature_rarity"]
           type?: Database["public"]["Enums"]["creature_type"]
